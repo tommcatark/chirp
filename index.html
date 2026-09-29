@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07211a" />
+    <title>鸣 Chirp · 登录</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230e9f6e'/%3E%3Crect x='5' y='10' width='3.4' height='8' rx='1.7' fill='white'/%3E%3Crect x='10.3' y='5.5' width='3.4' height='13' rx='1.7' fill='white'/%3E%3Crect x='15.6' y='9' width='3.4' height='9.5' rx='1.7' fill='white'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="brand-panel">
+        <div class="aurora aurora-one"></div>
+        <div class="aurora aurora-two"></div>
+
+        <div class="brand-mark" aria-label="鸣 Chirp">
+          <span class="brand-symbol" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22">
+              <rect x="4" y="9" width="4" height="10" rx="2" class="bar bar-1" />
+              <rect x="10" y="4" width="4" height="15" rx="2" class="bar bar-2" />
+              <rect x="16" y="7" width="4" height="12" rx="2" class="bar bar-3" />
+            </svg>
+          </span>
+          <span>鸣 <em>Chirp</em></span>
+        </div>
+
+        <div class="brand-copy">
+          <p class="eyebrow">SPEAK · ECHO · RESONATE</p>
+          <h1>让每一个想法<br /><em>鸣响</em>世界。</h1>
+          <p class="intro">分享此刻、加入讨论，你的声音会在这里激起回响。</p>
+
+          <div class="feed-preview" aria-hidden="true">
+            <article class="chirp-card card-one">
+              <div class="avatar" style="--a:#fcd34d;--b:#f472b6">林</div>
+              <div class="chirp-body">
+                <p class="chirp-meta"><strong>林默</strong><span>@linmo · 2 分钟</span></p>
+                <p class="chirp-text">刚在鸣上发了第一条，有人听见吗？🌙</p>
+                <p class="chirp-actions"><span>♡ 128</span><span>♺ 46</span><span>◎ 12</span></p>
+              </div>
+            </article>
+            <article class="chirp-card card-two">
+              <div class="avatar" style="--a:#6ee7b7;--b:#38bdf8">舟</div>
+              <div class="chirp-body">
+                <p class="chirp-meta"><strong>夜航船</strong><span>@nightboat · 17 分钟</span></p>
+                <p class="chirp-text">好想法不该只停留在脑海里，说出来就是第一步。</p>
+                <p class="chirp-actions"><span>♡ 2.3k</span><span>♺ 812</span><span>◎ 95</span></p>
+              </div>
+            </article>
+            <article class="chirp-card card-three">
+              <div class="avatar" style="--a:#c4b5fd;--b:#f0abfc">M</div>
+              <div class="chirp-body">
+                <p class="chirp-meta"><strong>Momo</strong><span>@momo · 1 小时</span></p>
+                <p class="chirp-text">今天的日落值得一条头条 ✦</p>
+                <p class="chirp-actions"><span>♡ 894</span><span>♺ 203</span><span>◎ 41</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <span>© 2026 Chirp</span>
+          <span>每一声，都有回响</span>
+        </div>
+      </section>
+
+      <section class="form-panel">
+        <div class="form-wrap">
+          <div class="mobile-brand">
+            <span class="brand-symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <rect x="4" y="9" width="4" height="10" rx="2" />
+                <rect x="10" y="4" width="4" height="15" rx="2" />
+                <rect x="16" y="7" width="4" height="12" rx="2" />
+              </svg>
+            </span>
+            鸣 <em>Chirp</em>
+          </div>
+          <div class="form-heading">
+            <p class="eyebrow" id="form-eyebrow">WELCOME BACK</p>
+            <h2 id="form-title">欢迎回来</h2>
+            <p id="form-subtitle">登录鸣 Chirp，继续发声与共鸣。</p>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="账户操作">
+            <button class="tab active" type="button" data-mode="login" role="tab" aria-selected="true">登录</button>
+            <button class="tab" type="button" data-mode="register" role="tab" aria-selected="false">注册</button>
+          </div>
+
+          <form id="auth-form" novalidate>
+            <div class="field register-only hidden">
+              <label for="name">你的昵称</label>
+              <div class="input-wrap">
+                <span class="input-icon">◎</span>
+                <input id="name" type="text" placeholder="例如：林默" autocomplete="name" />
+              </div>
+              <small class="error" data-error="name"></small>
+            </div>
+
+            <div class="field">
+              <label for="email">邮箱地址</label>
+              <div class="input-wrap">
+                <span class="input-icon">@</span>
+                <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+              </div>
+              <small class="error" data-error="email"></small>
+            </div>
+
+            <div class="field">
+              <label for="password">密码</label>
+              <div class="input-wrap">
+                <span class="input-icon">⌁</span>
+                <input id="password" type="password" placeholder="至少 8 位字符" autocomplete="current-password" />
+                <button class="toggle-password" type="button" aria-label="显示密码">显示</button>
+              </div>
+              <div class="strength register-only hidden" id="strength">
+                <div class="strength-bars"><i></i><i></i><i></i></div>
+                <small id="strength-text"></small>
+              </div>
+              <small class="error" data-error="password"></small>
+            </div>
+
+            <div class="field register-only hidden">
+              <label for="confirm-password">确认密码</label>
+              <div class="input-wrap">
+                <span class="input-icon">⌁</span>
+                <input id="confirm-password" type="password" placeholder="再次输入密码" autocomplete="new-password" />
+              </div>
+              <small class="error" data-error="confirm-password"></small>
+            </div>
+
+            <div class="form-options login-only">
+              <label class="check-label"><input id="remember" type="checkbox" /> <span>记住我</span></label>
+              <a href="#" id="forgot-link">忘记密码？</a>
+            </div>
+
+            <button class="submit-button" type="submit"><span id="submit-text">登录账户</span><span class="arrow">→</span></button>
+            <p class="status" id="status" role="status"></p>
+          </form>
+
+          <div class="divider"><span>或使用以下方式</span></div>
+          <div class="social-row">
+            <button class="social-button" type="button" data-social="Google"><span class="google-icon">G</span> Google</button>
+            <button class="social-button" type="button" data-social="Apple"><span class="apple-icon">●</span> Apple</button>
+          </div>
+          <p class="terms">继续即表示你同意我们的 <a href="#">服务条款</a> 与 <a href="#">隐私政策</a></p>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
