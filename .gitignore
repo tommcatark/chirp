@@ -15,3 +15,10 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Java / Maven
+backend/target/
+backend/data/
+*.class
+*.jar
+*.war

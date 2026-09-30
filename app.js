@@ -69,7 +69,7 @@ document.querySelector(".toggle-password").addEventListener("click", (event) => 
 });
 document.querySelector("#password").addEventListener("input", updateStrength);
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   clearErrors();
   status.textContent = "";
@@ -82,20 +82,39 @@ form.addEventListener("submit", (event) => {
   if (password.length < 8) valid = error("password", "密码至少需要 8 位字符") && valid;
   if (mode === "register" && document.querySelector("#confirm-password").value !== password) valid = error("confirm-password", "两次输入的密码不一致") && valid;
   if (!valid) return;
-  const displayName = mode === "register" ? name : (JSON.parse(localStorage.getItem("chirpUser") || "{}").name || email.split("@")[0]);
-  if (mode === "register") {
-    localStorage.setItem("chirpUser", JSON.stringify({ email, name }));
+  status.textContent = "正在提交…";
+  try {
+    const response = await fetch("http://localhost:8080/api/auth/" + mode, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(mode === "register" ? { name, email, password } : { email, password })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      status.textContent = data.message || "操作失败，请稍后重试。";
+      return;
+    }
+    localStorage.setItem("chirpUser", JSON.stringify(data));
+    status.textContent = `${data.message}，欢迎来到鸣 Chirp，${data.name}！你的第一声想说什么？`;
+  } catch {
+    status.textContent = "暂时无法连接服务器，请确认后端已启动。";
   }
-  status.textContent = `${mode === "register" ? "注册成功" : "登录成功"}，正在进入时间流…`;
-  setTimeout(() => {
-    status.textContent = `欢迎来到鸣 Chirp，${displayName}！你的第一声想说什么？`;
-  }, 650);
 });
 
-document.querySelector("#forgot-link").addEventListener("click", (event) => {
+document.querySelector("#forgot-link").addEventListener("click", async (event) => {
   event.preventDefault();
-  status.textContent = "重置密码的链接将发送到你的邮箱。";
+  const email = document.querySelector("#email").value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    error("email", "请先输入有效的邮箱地址");
+    return;
+  }
+  try {
+    const response = await fetch("http://localhost:8080/api/auth/forgot-password", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email })
+    });
+    const data = await response.json();
+    status.textContent = data.message;
+  } catch {
+    status.textContent = "暂时无法连接服务器，请稍后重试。";
+  }
 });
-document.querySelectorAll(".social-button").forEach((button) => button.addEventListener("click", () => {
-  status.textContent = `${button.dataset.social} 登录即将开放，敬请期待。`;
-}));

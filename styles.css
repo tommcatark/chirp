@@ -309,23 +309,6 @@ a:hover { text-decoration: underline; }
 .submit-button:hover .arrow { transform: translateX(3px); }
 .status { text-align: center; min-height: 18px; font-size: 12.5px; color: var(--green-dark); margin: 13px 0 0; font-weight: 500; }
 
-.divider { display: flex; align-items: center; gap: 12px; color: #a7aea8; font-size: 11px; margin: 28px 0 17px; }
-.divider::before, .divider::after { content: ""; height: 1px; background: var(--line); flex: 1; }
-.social-row { display: flex; gap: 11px; }
-.social-button {
-  flex: 1;
-  height: 44px;
-  background: var(--card);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius);
-  color: #4c5751;
-  font: 500 12.5px "DM Sans", "Noto Sans SC", sans-serif;
-  cursor: pointer;
-  transition: border-color .2s, background .2s, transform .18s;
-}
-.social-button:hover { border-color: #9ccbb8; background: #f4fbf8; transform: translateY(-1px); }
-.google-icon { color: #4285f4; font-weight: 700; font-size: 15px; margin-right: 6px; }
-.apple-icon { font-size: 13px; margin-right: 6px; color: #272b29; }
 .terms { text-align: center; font-size: 10.5px; color: #a3aaa5; margin: 26px 0 0; line-height: 1.7; }
 
 @media (max-width: 900px) {
