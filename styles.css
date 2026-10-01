@@ -70,7 +70,10 @@ body {
   letter-spacing: -.3px;
   position: relative;
   z-index: 1;
+  color: inherit;
+  text-decoration: none;
 }
+.brand-mark:hover, .mobile-brand:hover { text-decoration: none; }
 .brand-mark em, .mobile-brand em {
   font-style: normal;
   font-weight: 500;
@@ -305,6 +308,8 @@ a:hover { text-decoration: underline; }
 }
 .submit-button:hover { transform: translateY(-1.5px); box-shadow: 0 12px 26px rgba(14, 159, 110, .36); }
 .submit-button:active { transform: translateY(0); filter: brightness(.96); }
+.submit-button:disabled { opacity: .65; cursor: not-allowed; transform: none; box-shadow: none; }
+.back-login { text-align: center; margin: 18px 0 0; font-size: 13px; }
 .arrow { font-size: 19px; font-weight: 400; transition: transform .2s; }
 .submit-button:hover .arrow { transform: translateX(3px); }
 .status { text-align: center; min-height: 18px; font-size: 12.5px; color: var(--green-dark); margin: 13px 0 0; font-weight: 500; }

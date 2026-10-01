@@ -101,20 +101,9 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#forgot-link").addEventListener("click", async (event) => {
-  event.preventDefault();
+document.querySelector("#forgot-link").addEventListener("click", (event) => {
   const email = document.querySelector("#email").value.trim();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    error("email", "请先输入有效的邮箱地址");
-    return;
-  }
-  try {
-    const response = await fetch("http://localhost:8080/api/auth/forgot-password", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email })
-    });
-    const data = await response.json();
-    status.textContent = data.message;
-  } catch {
-    status.textContent = "暂时无法连接服务器，请稍后重试。";
-  }
+  event.currentTarget.href = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ? `/forgot-password.html?email=${encodeURIComponent(email)}`
+    : "/forgot-password.html";
 });
