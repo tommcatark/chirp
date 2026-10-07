@@ -1,0 +1,45 @@
+# ==================== chirp-auth 认证服务配置 ====================
+server:
+  port: 8081
+
+spring:
+  application:
+    # 服务名（Nacos 注册名，网关路由 uri 中的 lb://chirp-auth 需与此一致）
+    name: chirp-auth
+
+  # ===== 数据源配置（PostgreSQL） =====
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chirp
+    username: postgres
+    password: 123456
+  jpa:
+    hibernate:
+      # ddl-auto: update — 开发环境自动建表/更新表结构，生产环境应改为 validate 或 none
+      ddl-auto: update
+    open-in-view: false
+
+  # ===== Nacos 服务发现与配置中心 =====
+  cloud:
+    nacos:
+      # Nacos Server 地址（需先启动 Nacos，默认端口 8848）
+      server-addr: localhost:8848
+      discovery:
+        # 注册到 Nacos，供网关发现和路由
+        register-enabled: true
+      config:
+        # 启用 Nacos 配置中心（可将数据源等配置托管到 Nacos 动态刷新）
+        enabled: true
+        file-extension: yml
+
+# ===== Actuator 端点配置（Nacos 健康检查使用） =====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# ===== 日志级别 =====
+logging:
+  level:
+    com.chirp.auth: DEBUG
+    org.springframework.cloud: INFO

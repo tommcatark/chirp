@@ -1,4 +1,4 @@
-# Dependencies
+﻿# Dependencies
 node_modules/
 
 # Logs
@@ -17,8 +17,9 @@ Thumbs.db
 .idea/
 
 # Java / Maven
-backend/target/
-backend/data/
+**/target/
+**/data/
 *.class
 *.jar
 *.war
+*.iml

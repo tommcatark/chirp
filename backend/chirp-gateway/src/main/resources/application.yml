@@ -1,0 +1,44 @@
+# ==================== chirp-gateway 配置 ====================
+server:
+  port: 8080
+
+spring:
+  application:
+    name: chirp-gateway
+
+  # ===== Nacos 服务发现与配置中心 =====
+  cloud:
+    nacos:
+      # Nacos Server 地址（需先启动 Nacos，默认端口 8848）
+      server-addr: localhost:8848
+      discovery:
+        # 网关自身也注册到 Nacos（供其他服务发现网关地址）
+        register-enabled: true
+      config:
+        # 启用 Nacos 配置中心（可将路由规则等托管到 Nacos 动态刷新）
+        enabled: true
+        file-extension: yml
+
+    # ===== Spring Cloud Gateway 路由规则 =====
+    # 关键：lb:// 表示基于 Nacos 服务发现的负载均衡路由
+    # 新增微服务时，在此处添加路由条目即可
+    gateway:
+      routes:
+        # 认证服务路由：/api/auth/** 转发到 chirp-auth 服务
+        - id: chirp-auth-route
+          uri: lb://chirp-auth
+          predicates:
+            - Path=/api/auth/**
+          # 可按需添加限流、重试等过滤器
+          # filters:
+          #   - name: RequestRateLimiter
+
+# 前端开发服务器地址（跨域配置使用）
+app:
+  cors-origin: http://localhost:4173
+
+# ===== 日志级别（调试时可开启 gateway 路由详情） =====
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.loadbalancer: INFO
