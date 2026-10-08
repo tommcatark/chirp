@@ -150,7 +150,8 @@ form.addEventListener("submit", async (event) => {
     } else {
       persistUser(data);
     }
-    status.textContent = `${data.message}，欢迎来到鸣 Chirp，${data.name}！你的第一声想说什么？`;
+    status.textContent = `${data.message}，正在为你打开鸣 Chirp…`;
+    setTimeout(() => { window.location.href = "/home.html"; }, 700);
   } catch {
     status.textContent = "暂时无法连接服务器，请确认后端已启动。";
   } finally {

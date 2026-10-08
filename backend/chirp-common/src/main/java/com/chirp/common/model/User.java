@@ -13,6 +13,8 @@ import java.time.Instant;
  * 关键字段说明：
  * - email: 业务唯一键，数据库层有 uk_users_email 唯一约束
  * - passwordHash: BCrypt 哈希值，永不存储明文
+ * - bio: 用户简介，最多 200 字符，可为 null
+ * - avatarUrl: 头像 URL，可为 null
  * - createdAt: ISO-8601 时间戳，由 JPA 审计自动填充
  */
 @Entity
@@ -33,6 +35,14 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
+    /** 用户简介，最多 200 字符，可为 null（数据库有 ck_users_bio_length CHECK 约束） */
+    @Column
+    private String bio;
+
+    /** 头像 URL，可为 null */
+    @Column(length = 500)
+    private String avatarUrl;
+
     /** 注册时间，构造时自动填充为当前 UTC 时间 */
     @Column(nullable = false)
     private Instant createdAt;
@@ -52,4 +62,10 @@ public class User {
     public String getName() { return name; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
+    public String getBio() { return bio; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public Instant getCreatedAt() { return createdAt; }
+
+    public void setBio(String bio) { this.bio = bio; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }
