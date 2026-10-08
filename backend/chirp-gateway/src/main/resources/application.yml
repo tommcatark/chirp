@@ -33,6 +33,12 @@ spring:
           # filters:
           #   - name: RequestRateLimiter
 
+        # 帖子服务路由：/api/posts/** 转发到 chirp-auth（帖子能力暂由认证服务承载）
+        - id: chirp-posts-route
+          uri: lb://chirp-auth
+          predicates:
+            - Path=/api/posts/**
+
 # 前端开发服务器地址（跨域配置使用）
 app:
   cors-origin: http://localhost:4173

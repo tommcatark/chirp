@@ -91,11 +91,23 @@
                 <button class="post-btn" id="post-btn" type="button" disabled>发布</button>
               </div>
             </div>
+            <p class="composer-status" id="composer-status" role="status"></p>
           </div>
         </section>
 
         <!-- 信息流 -->
-        <section class="feed" id="feed" aria-label="时间流"></section>
+        <section class="feed" id="feed" aria-label="时间流">
+          <p class="feed-loading" id="feed-loading">正在加载时间流…</p>
+        </section>
+
+        <!-- 加载失败 -->
+        <div class="empty-state hidden" id="feed-error">
+          <div class="empty-mark">
+            <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M12 8v5M12 16.5h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /></svg>
+          </div>
+          <h2>时间流加载失败</h2>
+          <p>暂时无法连接服务器，请确认后端服务已启动。<br /><button class="retry-btn" id="retry-btn" type="button">重新加载</button></p>
+        </div>
 
         <!-- 关注为空 -->
         <div class="empty-state hidden" id="empty-following">

@@ -1,3 +1,7 @@
+/* ============ 全局配置 ============ */
+const API_BASE = "http://localhost:8080";
+const MAX_POST_LENGTH = 280;
+
 /* ============ 登录守卫与当前用户 ============ */
 function loadCurrentUser() {
   const raw = localStorage.getItem("chirpUser") || sessionStorage.getItem("chirpUser");
@@ -17,31 +21,15 @@ function loadCurrentUser() {
 
 const me = loadCurrentUser();
 
-const now = Date.now();
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
 
-/* 示例数据：待后端帖子接口上线后可直接替换为接口数据 */
-const authors = {
-  linmo:   { name: "林默", handle: "linmo", colors: ["#fcd34d", "#f472b6"] },
-  night:   { name: "夜航船", handle: "nightboat", colors: ["#6ee7b7", "#38bdf8"] },
-  momo:    { name: "Momo", handle: "momo", colors: ["#c4b5fd", "#f0abfc"] },
-  qing:    { name: "声声慢", handle: "slowecho", colors: ["#fca5a5", "#fcd34d"] },
-  bei:     { name: "北风", handle: "northwind", colors: ["#7dd3fc", "#818cf8"] }
-};
+/* 信息流数据：来自后端 GET /api/posts（数据库持久化） */
+let posts = [];
+/* 关注关系仅保存在本地（关注接口尚未上线，不跨会话/设备同步） */
+const followed = new Set();
 
-let posts = [
-  { id: 1, author: authors.night, createdAt: now - 17 * MIN, text: "好想法不该只停留在脑海里，说出来就是第一步。今天也要认真发声。", likes: 2300, reposts: 812, comments: 95, tag: "#思考碎片" },
-  { id: 2, author: authors.momo, createdAt: now - HOUR, text: "今天的日落值得一条头条 ✦ 你们那边的天空是什么颜色？", likes: 894, reposts: 203, comments: 41, tag: "#日常" },
-  { id: 3, author: authors.linmo, createdAt: now - 2 * HOUR, text: "刚在鸣上发了第一条，有人听见吗？🌙 愿每一个安静的灵魂都能找到共鸣。", likes: 128, reposts: 46, comments: 12, tag: "#第一声" },
-  { id: 4, author: authors.qing, createdAt: now - 3 * HOUR, text: "读书摘记：「声音看不见形状，却能在人心里留下轮廓。」—— 今天读到的最温柔的一句。", likes: 562, reposts: 174, comments: 23, tag: "#读书笔记" },
-  { id: 5, author: authors.bei, createdAt: now - 5 * HOUR, text: "晨跑五公里，风灌进耳朵的声音，像世界在给我鼓掌。早安，各位。", likes: 433, reposts: 58, comments: 19, tag: "#运动打卡" },
-  { id: 6, author: authors.night, createdAt: now - 8 * HOUR, text: "产品小记：下一版会加上「回声」功能——你的共鸣会被原作者听见。敬请期待。", likes: 1102, reposts: 356, comments: 88, tag: "#产品更新" }
-];
-
-/* 默认已关注的人（关注流据此筛选） */
-const followed = new Set(["nightboat"]);
-
+/* 热门话题为静态运营内容（暂无后端接口） */
 const trends = [
   { tag: "#秋日鸣响", posts: "12.4k 条鸣响" },
   { tag: "#产品更新", posts: "8,931 条鸣响" },
@@ -50,7 +38,17 @@ const trends = [
   { tag: "#今晚的月亮", posts: "2,406 条鸣响" }
 ];
 
-const suggestions = [authors.linmo, authors.qing, authors.bei];
+/* 推荐关注：handle 与数据库种子用户邮箱前缀一致，关注流可直接联动 */
+const suggestions = [
+  { name: "张三", handle: "zhangsan" },
+  { name: "李四", handle: "lisi" },
+  { name: "王五", handle: "wangwu" }
+];
+
+const AVATAR_PAIRS = [
+  ["#fcd34d", "#f472b6"], ["#6ee7b7", "#38bdf8"], ["#c4b5fd", "#f0abfc"],
+  ["#fca5a5", "#fcd34d"], ["#7dd3fc", "#818cf8"], ["#34d399", "#0e9f6e"]
+];
 
 let activeTab = "all";
 let keyword = "";
@@ -69,6 +67,16 @@ function initialOf(name) {
   return (name || "?").trim().charAt(0).toUpperCase();
 }
 
+function hashSeed(value) {
+  let hash = 0;
+  for (let i = 0; i < String(value).length; i++) hash = (hash * 31 + String(value).charCodeAt(i)) >>> 0;
+  return hash;
+}
+
+function colorsFor(seed) {
+  return AVATAR_PAIRS[hashSeed(seed) % AVATAR_PAIRS.length];
+}
+
 function timeAgo(ts) {
   const diff = Date.now() - ts;
   if (diff < MIN) return "刚刚";
@@ -81,32 +89,97 @@ function formatCount(n) {
   return n >= 10000 ? `${(n / 10000).toFixed(1)}w` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-function avatarHTML(author, extraClass = "") {
-  const [a, b] = author.colors;
-  return `<div class="avatar ${extraClass}" style="--a:${a};--b:${b}">${escapeHTML(initialOf(author.name))}</div>`;
+function avatarHTML(seed, name, extraClass = "") {
+  const [a, b] = colorsFor(seed);
+  return `<div class="avatar ${extraClass}" style="--a:${a};--b:${b}">${escapeHTML(initialOf(name))}</div>`;
+}
+
+/* 将后端 PostResponse 归一化为前端渲染结构 */
+function normalizePost(p) {
+  return {
+    id: p.id,
+    userId: p.userId,
+    author: { name: p.authorName, handle: p.authorHandle },
+    createdAt: Date.parse(p.createdAt) || Date.now(),
+    text: p.content,
+    likes: p.likes || 0,
+    reposts: p.reposts || 0,
+    comments: p.comments || 0,
+    liked: false,
+    reposted: false
+  };
 }
 
 /* ============ 初始化 ============ */
+if (me) init();
+
 function init() {
   $("#me-name").textContent = me.name;
   $("#me-email").textContent = `@${me.email.split("@")[0]}`;
   const myInitial = initialOf(me.name);
   $("#me-avatar").textContent = myInitial;
   $("#composer-avatar").textContent = myInitial;
+  const [a, b] = colorsFor(me.id || me.email);
+  $("#me-avatar").style.setProperty("--a", a);
+  $("#me-avatar").style.setProperty("--b", b);
+  $("#composer-avatar").style.setProperty("--a", a);
+  $("#composer-avatar").style.setProperty("--b", b);
 
   renderTrends();
   renderSuggestions();
-  renderFeed();
   bindEvents();
+  loadFeed();
 }
 
-/* ============ 信息流 ============ */
+/* ============ 接口：时间流 ============ */
+async function loadFeed() {
+  $("#feed-loading").classList.remove("hidden");
+  $("#feed-error").classList.add("hidden");
+  try {
+    const response = await fetch(`${API_BASE}/api/posts`, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    posts = (Array.isArray(data) ? data : []).map(normalizePost);
+    $("#feed-loading").classList.add("hidden");
+    $("#feed-error").classList.add("hidden");
+    renderFeed();
+  } catch {
+    posts = [];
+    $("#feed-loading").classList.add("hidden");
+    $("#feed").classList.add("hidden");
+    $("#empty-following").classList.add("hidden");
+    $("#feed-error").classList.remove("hidden");
+  }
+}
+
+/* ============ 接口：发帖 ============ */
+async function createPost(content) {
+  const response = await fetch(`${API_BASE}/api/posts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: me.id, content })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    // 登录态失效：清理并回到登录页
+    if (response.status === 401) {
+      localStorage.removeItem("chirpUser");
+      sessionStorage.removeItem("chirpUser");
+      window.location.replace("/");
+      return null;
+    }
+    throw new Error(data.message || "发布失败，请稍后重试");
+  }
+  return normalizePost(data);
+}
+
+/* ============ 信息流渲染 ============ */
 function visiblePosts() {
   let list = posts;
   if (activeTab === "following") list = list.filter((p) => followed.has(p.author.handle));
   if (keyword) {
     const q = keyword.toLowerCase();
-    list = list.filter((p) => p.text.toLowerCase().includes(q) || p.author.name.toLowerCase().includes(q) || (p.tag || "").toLowerCase().includes(q));
+    list = list.filter((p) => p.text.toLowerCase().includes(q) || p.author.name.toLowerCase().includes(q) || p.author.handle.toLowerCase().includes(q));
   }
   return list;
 }
@@ -114,14 +187,13 @@ function visiblePosts() {
 function postHTML(post) {
   return `
     <article class="chirp" data-id="${post.id}">
-      ${avatarHTML(post.author)}
+      ${avatarHTML(post.userId, post.author.name)}
       <div class="chirp-main">
         <p class="chirp-head">
           <strong>${escapeHTML(post.author.name)}</strong>
           <span class="handle">@${escapeHTML(post.author.handle)}</span>
           <span class="dot">·</span>
           <time>${timeAgo(post.createdAt)}</time>
-          ${post.tag ? `<a class="chirp-tag" href="#explore">${escapeHTML(post.tag)}</a>` : ""}
         </p>
         <p class="chirp-content">${escapeHTML(post.text)}</p>
         <div class="chirp-foot">
@@ -145,14 +217,29 @@ function postHTML(post) {
     </article>`;
 }
 
-function renderFeed(prependId = null) {
+function renderFeed(highlightId = null) {
   const feed = $("#feed");
   const list = visiblePosts();
+  feed.classList.remove("hidden");
   feed.innerHTML = list.map(postHTML).join("");
-  $("#empty-following").classList.toggle("hidden", list.length !== 0);
-  $("#feed").classList.toggle("hidden", list.length === 0);
-  if (prependId) {
-    const node = feed.querySelector(`[data-id="${prependId}"]`);
+  const noData = posts.length === 0 && !keyword;
+  const emptyBox = $("#empty-following");
+  if (activeTab === "following" && list.length === 0 && !keyword) {
+    emptyBox.querySelector("h2").textContent = "关注流还是静的";
+    emptyBox.querySelector("p").textContent = "去右侧「你可能感兴趣的人」关注一些声音，这里就会热闹起来。";
+    emptyBox.classList.remove("hidden");
+    feed.classList.add("hidden");
+  } else if (noData) {
+    // 数据库中还没有任何帖子：发一条即可打破空白
+    emptyBox.querySelector("h2").textContent = "还没有任何鸣响";
+    emptyBox.querySelector("p").textContent = "在上方发布框写下你的第一声，让时间流动起来。";
+    emptyBox.classList.remove("hidden");
+    feed.classList.add("hidden");
+  } else {
+    emptyBox.classList.add("hidden");
+  }
+  if (highlightId) {
+    const node = feed.querySelector(`[data-id="${highlightId}"]`);
     if (node) {
       node.classList.add("just-posted");
       node.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -169,7 +256,7 @@ function renderTrends() {
 function renderSuggestions() {
   $("#suggest-list").innerHTML = suggestions.map((s) => `
     <li data-handle="${escapeHTML(s.handle)}">
-      ${avatarHTML(s)}
+      ${avatarHTML(s.handle, s.name)}
       <div class="suggest-meta">
         <strong>${escapeHTML(s.name)}</strong>
         <span>@${escapeHTML(s.handle)}</span>
@@ -185,31 +272,50 @@ function bindEvents() {
   const input = $("#composer-input");
   const counter = $("#char-count");
   const postBtn = $("#post-btn");
+  const composerStatus = $("#composer-status");
 
   function syncComposer() {
     const len = input.value.trim().length;
-    counter.textContent = 280 - input.value.length;
+    counter.textContent = MAX_POST_LENGTH - input.value.length;
     counter.classList.toggle("over", input.value.length > 260);
-    postBtn.disabled = len === 0 || input.value.length > 280;
+    postBtn.disabled = len === 0 || input.value.length > MAX_POST_LENGTH || postBtn.dataset.busy === "1";
   }
 
-  input.addEventListener("input", syncComposer);
+  function setComposerError(message) {
+    composerStatus.textContent = message;
+    composerStatus.classList.toggle("error", Boolean(message));
+  }
+
+  input.addEventListener("input", () => { syncComposer(); if (composerStatus.textContent) setComposerError(""); });
   input.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") postBtn.click();
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !postBtn.disabled) postBtn.click();
   });
   $("#compose-cta").addEventListener("click", () => input.focus());
+  $("#retry-btn").addEventListener("click", loadFeed);
 
-  postBtn.addEventListener("click", () => {
+  postBtn.addEventListener("click", async () => {
     const text = input.value.trim();
-    if (!text || text.length > 280) return;
-    const myAuthor = { name: me.name, handle: me.email.split("@")[0], colors: ["#34d399", "#0e9f6e"] };
-    const post = { id: Date.now(), author: myAuthor, createdAt: Date.now(), text, likes: 0, reposts: 0, comments: 0, tag: null };
-    posts.unshift(post);
-    input.value = "";
+    if (!text || text.length > MAX_POST_LENGTH) return;
+
+    postBtn.dataset.busy = "1";
     syncComposer();
-    activeTab = "all";
-    document.querySelectorAll(".feed-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === "all"));
-    renderFeed(post.id);
+    postBtn.textContent = "发布中…";
+    setComposerError("");
+    try {
+      const created = await createPost(text);
+      if (!created) return; // 401 已触发跳转
+      posts.unshift(created);
+      input.value = "";
+      activeTab = "all";
+      document.querySelectorAll(".feed-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === "all"));
+      renderFeed(created.id);
+    } catch (error) {
+      setComposerError(error.message);
+    } finally {
+      postBtn.dataset.busy = "";
+      postBtn.textContent = "发布";
+      syncComposer();
+    }
   });
 
   document.querySelectorAll(".feed-tab").forEach((tab) => {
@@ -273,5 +379,3 @@ function bindEvents() {
     window.location.replace("/");
   });
 }
-
-if (me) init();
