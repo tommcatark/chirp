@@ -15,9 +15,9 @@ spring:
         # 网关自身也注册到 Nacos（供其他服务发现网关地址）
         register-enabled: true
       config:
-        # 启用 Nacos 配置中心（可将路由规则等托管到 Nacos 动态刷新）
-        enabled: true
-        file-extension: yml
+        # 暂不使用 Nacos 配置中心，仅使用服务发现
+        import-check:
+          enabled: false
 
     # ===== Spring Cloud Gateway 路由规则 =====
     # 关键：lb:// 表示基于 Nacos 服务发现的负载均衡路由

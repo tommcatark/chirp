@@ -27,9 +27,9 @@ spring:
         # 注册到 Nacos，供网关发现和路由
         register-enabled: true
       config:
-        # 启用 Nacos 配置中心（可将数据源等配置托管到 Nacos 动态刷新）
-        enabled: true
-        file-extension: yml
+        # 暂不使用 Nacos 配置中心，仅使用服务发现
+        import-check:
+          enabled: false
 
 # ===== Actuator 端点配置（Nacos 健康检查使用） =====
 management:
