@@ -4,40 +4,55 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
+
 /**
  * 认证相关 DTO（Data Transfer Object）。
  * <p>
- * 将请求/响应 record 集中在公共模块，方便跨服务（如 Gateway 校验、Feign 调用）复用。
- * password 字段承载的是前端 RSA-OAEP 密文（Base64），实际长度由解密后的明文再校验。
+ * 规范 §3.1.2 / §3.1.3：
+ * - AuthResponse 统一包含 token / expiresAt / id / name / email / handle / avatarUrl / message
+ * - 注册成功即登录态，前端不再二次登录
+ * - token 为 64 位随机字符串（规范 D1：DB token，不用 JWT）
  * </p>
  */
 public final class AuthDTO {
 
-    /** 注册请求 */
     public record RegisterRequest(
-            @NotBlank @Size(min = 2, max = 120) String name,
-            @NotBlank @Email String email,
+            @NotBlank(message = "昵称需要 2-120 个字符") @Size(min = 2, max = 120, message = "昵称需要 2-120 个字符") String name,
+            @NotBlank(message = "请输入有效的邮箱地址") @Email(message = "请输入有效的邮箱地址") String email,
             @NotBlank String password
     ) {}
 
-    /** 登录请求 */
     public record LoginRequest(
-            @NotBlank @Email String email,
+            @NotBlank(message = "请输入有效的邮箱地址") @Email(message = "请输入有效的邮箱地址") String email,
             @NotBlank String password
     ) {}
 
-    /** 忘记密码请求 */
     public record ForgotPasswordRequest(
             @NotBlank @Email String email
     ) {}
 
     /**
      * 认证成功响应（注册 / 登录共用）。
-     * token 为 JWT 登录令牌，前端后续请求通过 Authorization: Bearer {token} 携带。
+     * <p>
+     * 规范 §3.1.3 AuthResponse：
+     * - token：64 位随机字符串，前端存 chirpToken
+     * - expiresAt：token 过期时间，ISO-8601 UTC
+     * - id / name / email / handle / avatarUrl：当前用户基础信息，前端存 chirpUser
+     * </p>
      */
-    public record AuthResponse(Long id, String name, String email, String message, String token) {}
+    public record AuthResponse(
+            String token,
+            Instant expiresAt,
+            Long id,
+            String name,
+            String email,
+            String handle,
+            String avatarUrl,
+            String message
+    ) {}
 
-    /** 错误响应 */
+    /** 错误响应 — 规范 §1.4：统一 { "message": "..." } */
     public record ErrorResponse(String message) {}
 
     /** 通用消息响应 */

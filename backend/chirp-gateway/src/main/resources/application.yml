@@ -6,56 +6,60 @@ spring:
   application:
     name: chirp-gateway
 
-  # ===== Redis 配置（网关鉴权检查 token 是否存在，实现主动失效） =====
   data:
     redis:
       host: localhost
       port: 6379
 
-  # ===== Nacos 服务发现与配置中心 =====
   cloud:
     nacos:
-      # Nacos Server 地址（需先启动 Nacos，默认端口 8848）
       server-addr: localhost:8848
       discovery:
-        # 网关自身也注册到 Nacos（供其他服务发现网关地址）
         register-enabled: true
       config:
-        # 暂不使用 Nacos 配置中心，仅使用服务发现
         import-check:
           enabled: false
 
-    # ===== Spring Cloud Gateway 路由规则 =====
-    # 关键：lb:// 表示基于 Nacos 服务发现的负载均衡路由
-    # 新增微服务时，在此处添加路由条目即可
     gateway:
       routes:
-        # 认证服务路由：/api/auth/** 转发到 chirp-auth 服务
         - id: chirp-auth-route
           uri: lb://chirp-auth
           predicates:
             - Path=/api/auth/**
-          # 可按需添加限流、重试等过滤器
-          # filters:
-          #   - name: RequestRateLimiter
 
-        # 帖子服务路由：/api/posts/** 转发到 chirp-auth（帖子能力暂由认证服务承载）
         - id: chirp-posts-route
           uri: lb://chirp-auth
           predicates:
             - Path=/api/posts/**
 
-# 前端开发服务器地址（跨域配置使用）
+        - id: chirp-users-route
+          uri: lb://chirp-auth
+          predicates:
+            - Path=/api/users/**
+
+        - id: chirp-comments-route
+          uri: lb://chirp-auth
+          predicates:
+            - Path=/api/comments/**
+
+        - id: chirp-notifications-route
+          uri: lb://chirp-auth
+          predicates:
+            - Path=/api/notifications/**
+
+        - id: chirp-search-route
+          uri: lb://chirp-auth
+          predicates:
+            - Path=/api/search/**
+
 app:
   cors-origin: http://localhost:4173
 
-# ===== JWT 登录令牌配置（secret 必须与 chirp-auth 一致，生产用环境变量覆盖） =====
 chirp:
   jwt:
     secret: ${CHIRP_JWT_SECRET:chirp-dev-jwt-secret-0123456789abcdef-please-change}
     expiration-millis: 604800000
 
-# ===== 日志级别（调试时可开启 gateway 路由详情） =====
 logging:
   level:
     org.springframework.cloud.gateway: INFO

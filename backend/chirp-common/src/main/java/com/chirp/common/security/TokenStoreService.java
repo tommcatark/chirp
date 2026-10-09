@@ -34,7 +34,19 @@ public interface TokenStoreService {
     /**
      * 移除 token（登出时调用），使该 token 立即失效。
      *
-     * @param token JWT 令牌字符串
+     * @param token 令牌字符串
      */
     void remove(String token);
+
+    /**
+     * 根据 token 获取关联的用户 ID。
+     * <p>
+     * 用于下游服务从 Authorization 头解析当前用户身份（纵深防御）。
+     * token 无效或已过期时返回 null。
+     * </p>
+     *
+     * @param token 令牌字符串
+     * @return 用户 ID，token 无效时返回 null
+     */
+    Long getUserId(String token);
 }

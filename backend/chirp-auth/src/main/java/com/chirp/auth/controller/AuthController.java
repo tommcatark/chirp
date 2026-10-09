@@ -4,7 +4,6 @@ import com.chirp.auth.config.CryptoKeyService;
 import com.chirp.auth.repository.UserRepository;
 import com.chirp.common.model.AuthDTO;
 import com.chirp.common.model.User;
-import com.chirp.common.security.JwtService;
 import com.chirp.common.security.TokenStoreService;
 import com.chirp.common.util.PasswordEncoderUtil;
 import jakarta.validation.Valid;
@@ -14,145 +13,124 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.HexFormat;
 import java.util.Map;
 
 /**
- * 认证控制器 — 处理注册、登录、忘记密码、RSA 公钥下发。
+ * 认证控制器 — 规范 §3.1 会话与用户。
  * <p>
- * 关键功能：
- * - /public-key：下发 RSA 公钥，前端用于加密密码传输
- * - /register：注册新用户（RSA 解密 → BCrypt 哈希 → 入库）
- * - /login：登录验证（RSA 解密 → BCrypt 匹配）
- * - /forgot-password：忘记密码（预留接口，当前仅返回提示）
+ * 关键改造（C1）：
+ * - token 改为 64 位随机字符串（规范 D1：DB token，不用 JWT）
+ * - AuthResponse 追加 token / expiresAt / handle / avatarUrl
+ * - 注册成功即登录态，前端不再二次登录
+ * - logout 返回 204（规范 §3.1.4）
  * </p>
- *
- * 关键技术：
- * - RSA-OAEP 传输加密：前端加密 → 后端解密 → BCrypt 校验/入库
- * - BCrypt 哈希：每次 encode 结果不同（内置随机盐），matches 可正确校验
  */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final UserRepository users;
     private final CryptoKeyService cryptoKeys;
-    private final JwtService jwtService;
     private final TokenStoreService tokenStore;
-    private final long jwtExpirationMillis;
+    private final long tokenExpirationMillis;
 
     public AuthController(UserRepository users,
                           CryptoKeyService cryptoKeys,
-                          JwtService jwtService,
                           TokenStoreService tokenStore,
-                          @Value("${chirp.jwt.expiration-millis:604800000}") long jwtExpirationMillis) {
+                          @Value("${chirp.jwt.expiration-millis:604800000}") long tokenExpirationMillis) {
         this.users = users;
         this.cryptoKeys = cryptoKeys;
-        this.jwtService = jwtService;
         this.tokenStore = tokenStore;
-        this.jwtExpirationMillis = jwtExpirationMillis;
+        this.tokenExpirationMillis = tokenExpirationMillis;
     }
 
-    /**
-     * 下发 RSA 公钥（SPKI DER 的 Base64）。
-     * 前端获取后用于 RSA-OAEP(SHA-256) 加密密码，密文通过 login/register 请求发送。
-     */
+    /** 规范 §3.1.1 — 下发 RSA 公钥（SPKI DER 的 Base64） */
     @GetMapping("/public-key")
     public Map<String, String> publicKey() {
         return Map.of("publicKey", cryptoKeys.getPublicKeyBase64());
     }
 
     /**
-     * 用户注册 — RSA 解密密码 → 校验长度 → BCrypt 哈希 → 入库。
-     * <p>
-     * 关键流程：
-     * 1. decryptOrReject：RSA 解密前端密文，失败则拒绝（不暴露细节）
-     * 2. 密码长度校验：8~100 字符
-     * 3. 邮箱唯一性检查：忽略大小写
-     * 4. BCrypt 哈希入库
-     * </p>
+     * 规范 §3.1.2 — 用户注册 [改造]
+     * 改造点：响应追加 token / expiresAt / handle / avatarUrl，注册即登录
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody AuthDTO.RegisterRequest request) {
-        // 第一步：RSA 解密前端密文
         String password = decryptOrReject(request.password());
         if (password == null) return badRequest("无效的请求，请刷新页面后重试。");
 
-        // 第二步：密码长度校验
-        if (password.length() < 8 || password.length() > 100) return badRequest("密码至少需要 8 位字符");
+        if (password.length() < 8 || password.length() > 100) return badRequest("无效的请求，请刷新页面后重试。");
 
-        // 第三步：邮箱唯一性检查（忽略大小写）
+        String name = request.name().trim();
+        int nameLen = name.codePointCount(0, name.length());
+        if (nameLen < 2 || nameLen > 120) return badRequest("昵称需要 2-120 个字符");
+
         String email = request.email().trim().toLowerCase();
         if (users.existsByEmailIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new AuthDTO.ErrorResponse("该邮箱已经注册"));
         }
 
-        // 第四步：BCrypt 哈希入库
-        User user = users.save(new User(request.name().trim(), email, PasswordEncoderUtil.encode(password)));
-        // 注册即登录：签发 JWT，前端无需再跳登录
-        String token = jwtService.issue(user.getId(), user.getEmail(), user.getName());
-        tokenStore.store(token, user.getId(), jwtExpirationMillis);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new AuthDTO.AuthResponse(user.getId(), user.getName(), user.getEmail(), "注册成功", token));
+        User user = users.save(new User(name, email, PasswordEncoderUtil.encode(password)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(buildAuthResponse(user, "注册成功"));
     }
 
     /**
-     * 用户登录 — RSA 解密密码 → 查找用户 → BCrypt 匹配。
-     * <p>
-     * 关键流程：
-     * 1. decryptOrReject：RSA 解密前端密文
-     * 2. 按邮箱查找用户（忽略大小写）
-     * 3. BCrypt 匹配密码哈希
-     * </p>
+     * 规范 §3.1.3 — 用户登录 [改造]
+     * 改造点：响应追加 token / expiresAt / handle / avatarUrl
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthDTO.LoginRequest request) {
-        // RSA 解密
         String password = decryptOrReject(request.password());
         if (password == null) return badRequest("无效的请求，请刷新页面后重试。");
 
-        // 查找用户 + BCrypt 校验；校验通过签发 JWT
         String finalPassword = password;
         return users.findByEmailIgnoreCase(request.email().trim())
                 .filter(user -> PasswordEncoderUtil.matches(finalPassword, user.getPasswordHash()))
-                .<ResponseEntity<?>>map(user -> {
-                    String token = jwtService.issue(user.getId(), user.getEmail(), user.getName());
-                    tokenStore.store(token, user.getId(), jwtExpirationMillis);
-                    return ResponseEntity.ok(new AuthDTO.AuthResponse(user.getId(), user.getName(), user.getEmail(), "登录成功", token));
-                })
+                .<ResponseEntity<?>>map(user -> ResponseEntity.ok(buildAuthResponse(user, "登录成功")))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthDTO.ErrorResponse("邮箱或密码不正确")));
     }
 
     /**
-     * 忘记密码 — 预留接口，当前仅返回提示消息。
-     * 后续可集成邮件/短信发送重置链接。
+     * 规范 §3.1.4 — 用户登出 [新增]
+     * 响应 204 No Content，删除 token 使其立即失效
      */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            tokenStore.remove(token);
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 规范 §3.1.5 — 忘记密码 [现状] */
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody AuthDTO.ForgotPasswordRequest request) {
         return ResponseEntity.ok(new AuthDTO.MessageResponse("如果该邮箱已注册，重置密码的链接将发送到你的邮箱。"));
     }
 
-    /**
-     * 用户登出 — 从 Redis 移除 token，使其立即失效。
-     * <p>
-     * 即使 JWT 尚未过期，网关鉴权时也会因 Redis 中无此 token 而拒绝请求，
-     * 从而实现 token 主动失效（弥补无状态 JWT 无法撤销的缺陷）。
-     */
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring("Bearer ".length()).trim();
-            tokenStore.remove(token);
-        }
-        return ResponseEntity.ok(new AuthDTO.MessageResponse("已退出登录"));
+    /** 签发 64 位随机 token 并构建 AuthResponse */
+    private AuthDTO.AuthResponse buildAuthResponse(User user, String message) {
+        String token = generateSecureToken();
+        Instant expiresAt = Instant.now().plusMillis(tokenExpirationMillis);
+        tokenStore.store(token, user.getId(), tokenExpirationMillis);
+        return new AuthDTO.AuthResponse(
+                token, expiresAt, user.getId(), user.getName(), user.getEmail(),
+                handleOf(user.getEmail()), user.getAvatarUrl(), message
+        );
     }
 
-    /**
-     * 解密前端 RSA 密文；任何异常都视为非法请求（不向前端暴露细节）。
-     * <p>
-     * 关键安全策略：
-     * - 解密失败返回 null，由调用方统一返回"无效请求"提示
-     * - 不区分"密文格式错误"和"密钥不匹配"，避免信息泄露
-     * </p>
-     */
+    /** 生成 64 个十六进制字符（32 字节 = 64 hex chars）的随机 token */
+    private String generateSecureToken() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
+    }
+
     private String decryptOrReject(String cipherText) {
         if (cipherText == null || cipherText.isBlank()) return null;
         try {
@@ -164,5 +142,10 @@ public class AuthController {
 
     private ResponseEntity<?> badRequest(String message) {
         return ResponseEntity.badRequest().body(new AuthDTO.ErrorResponse(message));
+    }
+
+    static String handleOf(String email) {
+        int at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : email;
     }
 }

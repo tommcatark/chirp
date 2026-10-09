@@ -66,6 +66,7 @@ public class User {
     public String getAvatarUrl() { return avatarUrl; }
     public Instant getCreatedAt() { return createdAt; }
 
+    public void setName(String name) { this.name = name; }
     public void setBio(String bio) { this.bio = bio; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

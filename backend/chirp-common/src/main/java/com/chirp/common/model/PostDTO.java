@@ -6,32 +6,40 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
 /**
- * 帖子相关 DTO（Data Transfer Object）。
+ * 帖子相关 DTO。
  * <p>
- * - CreatePostRequest：发帖请求，仅含正文；发帖人身份由 Authorization 头中的 JWT 解析，
- *   不再接受请求体里的 userId，防止冒充他人发帖
- * - PostResponse：时间线响应，附带作者昵称与 handle（邮箱前缀），供前端直接渲染
+ * 规范 §3.0 PostResponse：
+ * - 含作者信息（authorName, authorHandle, authorAvatarUrl）
+ * - liked：当前请求者是否已点赞，未登录时恒为 false
+ * - mine：是否为当前请求者发布，未登录时恒为 false
+ * - 作者被删除时 authorName="未知用户", authorHandle="unknown"
  * </p>
  */
 public final class PostDTO {
 
-    /** 发帖请求（身份来自 JWT，而非请求体） */
+    /** 发帖请求 — 规范 §3.2.2：身份来自 token，请求体仅含 content */
     public record CreatePostRequest(
             @NotBlank(message = "内容不能为空") @Size(max = 500, message = "内容不能超过 500 字符") String content
     ) {}
 
-    /** 帖子响应（含作者信息） */
+    /** 帖子响应 — 规范 §3.0 PostResponse */
     public record PostResponse(
             Long id,
             Long userId,
             String authorName,
             String authorHandle,
+            String authorAvatarUrl,
             String content,
             Instant createdAt,
             long likes,
             long reposts,
-            long comments
+            long comments,
+            boolean liked,
+            boolean mine
     ) {}
+
+    /** 点赞/取消点赞响应 — 规范 §3.2.6 / §3.2.7 */
+    public record LikeResponse(boolean liked, long likes) {}
 
     private PostDTO() {}
 }
