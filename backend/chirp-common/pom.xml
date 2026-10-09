@@ -14,7 +14,30 @@
     <name>chirp-common</name>
     <description>公共模块 — 跨服务共享的实体、DTO、工具类与常量</description>
 
+    <properties>
+        <!-- JWT 库版本（本地仓库与阿里云镜像均可用） -->
+        <jjwt.version>0.12.5</jjwt.version>
+    </properties>
+
     <dependencies>
+        <!-- JWT（jjwt）：auth 服务签发、gateway 校验，共用同一套实现 -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
         <!-- JPA 注解（@Entity 等仅作编译依赖，不强制运行时） -->
         <dependency>
             <groupId>jakarta.persistence</groupId>

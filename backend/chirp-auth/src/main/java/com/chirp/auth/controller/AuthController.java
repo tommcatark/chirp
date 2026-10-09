@@ -4,8 +4,12 @@ import com.chirp.auth.config.CryptoKeyService;
 import com.chirp.auth.repository.UserRepository;
 import com.chirp.common.model.AuthDTO;
 import com.chirp.common.model.User;
+import com.chirp.common.security.JwtService;
+import com.chirp.common.security.TokenStoreService;
 import com.chirp.common.util.PasswordEncoderUtil;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,10 +35,20 @@ import java.util.Map;
 public class AuthController {
     private final UserRepository users;
     private final CryptoKeyService cryptoKeys;
+    private final JwtService jwtService;
+    private final TokenStoreService tokenStore;
+    private final long jwtExpirationMillis;
 
-    public AuthController(UserRepository users, CryptoKeyService cryptoKeys) {
+    public AuthController(UserRepository users,
+                          CryptoKeyService cryptoKeys,
+                          JwtService jwtService,
+                          TokenStoreService tokenStore,
+                          @Value("${chirp.jwt.expiration-millis:604800000}") long jwtExpirationMillis) {
         this.users = users;
         this.cryptoKeys = cryptoKeys;
+        this.jwtService = jwtService;
+        this.tokenStore = tokenStore;
+        this.jwtExpirationMillis = jwtExpirationMillis;
     }
 
     /**
@@ -73,7 +87,11 @@ public class AuthController {
 
         // 第四步：BCrypt 哈希入库
         User user = users.save(new User(request.name().trim(), email, PasswordEncoderUtil.encode(password)));
-        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthDTO.AuthResponse(user.getId(), user.getName(), user.getEmail(), "注册成功"));
+        // 注册即登录：签发 JWT，前端无需再跳登录
+        String token = jwtService.issue(user.getId(), user.getEmail(), user.getName());
+        tokenStore.store(token, user.getId(), jwtExpirationMillis);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new AuthDTO.AuthResponse(user.getId(), user.getName(), user.getEmail(), "注册成功", token));
     }
 
     /**
@@ -91,11 +109,15 @@ public class AuthController {
         String password = decryptOrReject(request.password());
         if (password == null) return badRequest("无效的请求，请刷新页面后重试。");
 
-        // 查找用户 + BCrypt 校验
+        // 查找用户 + BCrypt 校验；校验通过签发 JWT
         String finalPassword = password;
         return users.findByEmailIgnoreCase(request.email().trim())
                 .filter(user -> PasswordEncoderUtil.matches(finalPassword, user.getPasswordHash()))
-                .<ResponseEntity<?>>map(user -> ResponseEntity.ok(new AuthDTO.AuthResponse(user.getId(), user.getName(), user.getEmail(), "登录成功")))
+                .<ResponseEntity<?>>map(user -> {
+                    String token = jwtService.issue(user.getId(), user.getEmail(), user.getName());
+                    tokenStore.store(token, user.getId(), jwtExpirationMillis);
+                    return ResponseEntity.ok(new AuthDTO.AuthResponse(user.getId(), user.getName(), user.getEmail(), "登录成功", token));
+                })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthDTO.ErrorResponse("邮箱或密码不正确")));
     }
 
@@ -106,6 +128,21 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody AuthDTO.ForgotPasswordRequest request) {
         return ResponseEntity.ok(new AuthDTO.MessageResponse("如果该邮箱已注册，重置密码的链接将发送到你的邮箱。"));
+    }
+
+    /**
+     * 用户登出 — 从 Redis 移除 token，使其立即失效。
+     * <p>
+     * 即使 JWT 尚未过期，网关鉴权时也会因 Redis 中无此 token 而拒绝请求，
+     * 从而实现 token 主动失效（弥补无状态 JWT 无法撤销的缺陷）。
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            tokenStore.remove(token);
+        }
+        return ResponseEntity.ok(new AuthDTO.MessageResponse("已退出登录"));
     }
 
     /**

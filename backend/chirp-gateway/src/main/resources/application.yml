@@ -6,6 +6,12 @@ spring:
   application:
     name: chirp-gateway
 
+  # ===== Redis 配置（网关鉴权检查 token 是否存在，实现主动失效） =====
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   # ===== Nacos 服务发现与配置中心 =====
   cloud:
     nacos:
@@ -42,6 +48,12 @@ spring:
 # 前端开发服务器地址（跨域配置使用）
 app:
   cors-origin: http://localhost:4173
+
+# ===== JWT 登录令牌配置（secret 必须与 chirp-auth 一致，生产用环境变量覆盖） =====
+chirp:
+  jwt:
+    secret: ${CHIRP_JWT_SECRET:chirp-dev-jwt-secret-0123456789abcdef-please-change}
+    expiration-millis: 604800000
 
 # ===== 日志级别（调试时可开启 gateway 路由详情） =====
 logging:
