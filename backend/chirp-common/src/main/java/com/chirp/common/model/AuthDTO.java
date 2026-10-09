@@ -31,8 +31,11 @@ public final class AuthDTO {
             @NotBlank @Email String email
     ) {}
 
-    /** 认证成功响应（注册 / 登录共用） */
-    public record AuthResponse(Long id, String name, String email, String message) {}
+    /**
+     * 认证成功响应（注册 / 登录共用）。
+     * token 为 JWT 登录令牌，前端后续请求通过 Authorization: Bearer {token} 携带。
+     */
+    public record AuthResponse(Long id, String name, String email, String message, String token) {}
 
     /** 错误响应 */
     public record ErrorResponse(String message) {}

@@ -5,7 +5,10 @@ import com.chirp.auth.repository.UserRepository;
 import com.chirp.common.model.Post;
 import com.chirp.common.model.PostDTO;
 import com.chirp.common.model.User;
+import com.chirp.common.security.JwtService;
+import io.jsonwebtoken.JwtException;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,21 +22,23 @@ import java.util.stream.Collectors;
 /**
  * 帖子控制器 — 时间线查询与发帖。
  * <p>
- * - GET  /api/posts：获取最新 50 条帖子（含作者昵称、handle），按时间倒序
- * - POST /api/posts：发帖入库，返回带作者信息的完整帖子对象
+ * - GET  /api/posts：获取最新 50 条帖子（含作者昵称、handle），按时间倒序（公开可读）
+ * - POST /api/posts：发帖入库，发帖人身份从 Authorization: Bearer {JWT} 解析
  * </p>
- * 鉴权说明：当前登录态以前端保存的用户信息为准，服务端校验 userId 存在；
- * 后续接入 Token 后将从令牌解析用户身份。
+ * 安全设计（纵深防御）：网关已对写请求统一校验 JWT，本服务仍再次独立校验，
+ * 即使绕过网关直连 8081 也无法伪造身份；请求体不再包含 userId。
  */
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
     private final PostRepository posts;
     private final UserRepository users;
+    private final JwtService jwtService;
 
-    public PostController(PostRepository posts, UserRepository users) {
+    public PostController(PostRepository posts, UserRepository users, JwtService jwtService) {
         this.posts = posts;
         this.users = users;
+        this.jwtService = jwtService;
     }
 
     /** 时间线：最新 50 条帖子，批量带出作者信息（避免 N+1 查询）。 */
@@ -49,13 +54,20 @@ public class PostController {
         return latest.stream().map(post -> toResponse(post, authorMap.get(post.getUserId()))).toList();
     }
 
-    /** 发帖：校验用户存在 → 内容去首尾空白 → 入库 → 返回完整帖子。 */
+    /** 发帖：校验 JWT → 确认用户存在 → 内容去首尾空白 → 入库 → 返回完整帖子。 */
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody PostDTO.CreatePostRequest request) {
-        User author = users.findById(request.userId()).orElse(null);
+    public ResponseEntity<?> create(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            @Valid @RequestBody PostDTO.CreatePostRequest request) {
+
+        JwtService.JwtPayload payload = authenticate(authorization);
+        if (payload == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthError("登录信息已失效，请重新登录"));
+        }
+
+        User author = users.findById(payload.userId()).orElse(null);
         if (author == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthError("登录信息已失效，请重新登录"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthError("登录信息已失效，请重新登录"));
         }
         String content = request.content().trim();
         if (content.isEmpty() || content.length() > 500) {
@@ -64,6 +76,21 @@ public class PostController {
 
         Post saved = posts.save(new Post(author.getId(), content));
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(saved, author));
+    }
+
+    /**
+     * 从 Authorization 头解析并校验 JWT；任何异常（缺失/格式错/过期/签名错）一律返回 null。
+     * 不向前端区分失败类型，避免信息泄露。
+     */
+    private JwtService.JwtPayload authenticate(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) return null;
+        String token = authorization.substring("Bearer ".length()).trim();
+        if (token.isEmpty()) return null;
+        try {
+            return jwtService.verify(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /** 实体转响应；作者被删除等异常情况下做兜底（外键级联场景一般不会出现）。 */
