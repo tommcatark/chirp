@@ -3,23 +3,37 @@ const API_BASE = "http://localhost:8080";
 const MAX_POST_LENGTH = 280;
 
 /* ============ 登录守卫与当前用户 ============ */
+function clearAuthAndRedirect() {
+  localStorage.removeItem("chirpUser");
+  sessionStorage.removeItem("chirpUser");
+  localStorage.removeItem("chirpToken");
+  sessionStorage.removeItem("chirpToken");
+  window.location.replace("/");
+}
+
 function loadCurrentUser() {
   const raw = localStorage.getItem("chirpUser") || sessionStorage.getItem("chirpUser");
-  if (!raw) {
-    window.location.replace("/");
+  const token = localStorage.getItem("chirpToken") || sessionStorage.getItem("chirpToken");
+  // 旧版本登录态没有 JWT，需重新登录获取令牌
+  if (!raw || !token) {
+    clearAuthAndRedirect();
     return null;
   }
   try {
     return JSON.parse(raw);
   } catch {
-    localStorage.removeItem("chirpUser");
-    sessionStorage.removeItem("chirpUser");
-    window.location.replace("/");
+    clearAuthAndRedirect();
     return null;
   }
 }
 
+function loadToken() {
+  return localStorage.getItem("chirpToken") || sessionStorage.getItem("chirpToken");
+}
+
 const me = loadCurrentUser();
+/* 鉴权失败时统一的 401 跳转标记，避免并发请求重复跳转 */
+let authExpired = false;
 
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
@@ -154,18 +168,24 @@ async function loadFeed() {
 
 /* ============ 接口：发帖 ============ */
 async function createPost(content) {
+  const token = loadToken();
   const response = await fetch(`${API_BASE}/api/posts`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: me.id, content })
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    // 身份由 JWT 承载，请求体不再包含 userId，杜绝冒充发帖
+    body: JSON.stringify({ content })
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    // 登录态失效：清理并回到登录页
+    // 令牌缺失/过期/无效（网关或认证服务返回 401）：清理并回到登录页
     if (response.status === 401) {
-      localStorage.removeItem("chirpUser");
-      sessionStorage.removeItem("chirpUser");
-      window.location.replace("/");
+      if (!authExpired) {
+        authExpired = true;
+        clearAuthAndRedirect();
+      }
       return null;
     }
     throw new Error(data.message || "发布失败，请稍后重试");
@@ -374,8 +394,6 @@ function bindEvents() {
   });
 
   $("#logout-btn").addEventListener("click", () => {
-    localStorage.removeItem("chirpUser");
-    sessionStorage.removeItem("chirpUser");
-    window.location.replace("/");
+    clearAuthAndRedirect();
   });
 }

@@ -14,9 +14,17 @@ spring:
     password: 123456
   jpa:
     hibernate:
-      # ddl-auto: update — 开发环境自动建表/更新表结构，生产环境应改为 validate 或 none
       ddl-auto: update
     open-in-view: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  # ===== Redis 配置（JWT token 存储，支持登出主动失效） =====
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
   # ===== Nacos 服务发现与配置中心 =====
   cloud:
@@ -37,6 +45,14 @@ management:
     web:
       exposure:
         include: health,info
+
+# ===== JWT 登录令牌配置 =====
+# secret 必须与 chirp-gateway 完全一致；生产环境务必通过环境变量 CHIRP_JWT_SECRET 覆盖（≥32 字节）
+chirp:
+  jwt:
+    secret: ${CHIRP_JWT_SECRET:chirp-dev-jwt-secret-0123456789abcdef-please-change}
+    # 有效期 7 天
+    expiration-millis: 604800000
 
 # ===== 日志级别 =====
 logging:

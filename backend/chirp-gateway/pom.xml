@@ -15,6 +15,11 @@
     <description>API 网关 — 统一入口、路由转发、跨域与限流</description>
 
     <dependencies>
+        <!-- 内部公共模块：JwtService 等共享安全组件 -->
+        <dependency>
+            <groupId>com.chirp</groupId>
+            <artifactId>chirp-common</artifactId>
+        </dependency>
         <!-- Spring Cloud Gateway（基于 WebFlux 的响应式网关，不可引入 spring-boot-starter-web） -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

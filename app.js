@@ -16,10 +16,12 @@ let failedLogins = 0;
 let lockUntil = 0;
 let lockTimer = null;
 
-/* 仅在勾选“记住我”时持久化到 localStorage，否则只放 sessionStorage，关闭标签页即清除。 */
+/* 仅在勾选“记住我”时持久化到 localStorage，否则只放 sessionStorage，关闭标签页即清除。
+   用户信息与 JWT 令牌分两个键存储，退出时一并清除。 */
 function persistUser(data) {
   const storage = rememberBox.checked ? localStorage : sessionStorage;
   storage.setItem("chirpUser", JSON.stringify(data));
+  if (data.token) storage.setItem("chirpToken", data.token);
 }
 
 /* 登录连续失败后的前端节流（仅增加暴力破解成本，真正的限流应在后端实现）。 */
@@ -146,7 +148,9 @@ form.addEventListener("submit", async (event) => {
     }
     failedLogins = 0;
     if (mode === "register") {
+      // 注册即登录：用户信息与 JWT 一并写入 localStorage
       localStorage.setItem("chirpUser", JSON.stringify(data));
+      if (data.token) localStorage.setItem("chirpToken", data.token);
     } else {
       persistUser(data);
     }

@@ -8,31 +8,23 @@ import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 /**
- * 网关跨域配置 — 统一在网关层处理 CORS，微服务无需单独配置。
- * <p>
- * 关键技术点：
- * - Spring Cloud Gateway 基于 WebFlux，需使用 CorsWebFilter（非 WebMvcConfigurer）
- * - 仅允许前端开发服务器 origin 访问
- * - allowedHeaders 设为 "*" 以支持 RSA 公钥等自定义头
- * </p>
+ * 网关跨域配置 — 规范 §1.1：仅放行 http://localhost:4173。
+ * 新增 PUT / DELETE 方法支持（规范 §3.1.7 PUT /users/me, §3.2.4 DELETE /posts/{id} 等）。
  */
 @Configuration
 public class CorsConfig {
 
-    /** 前端开发服务器地址，从 application.yml 注入 */
     @Value("${app.cors-origin}")
     private String origin;
 
-    /**
-     * 构建跨域过滤器 — 所有路由共享同一 CORS 策略。
-     * 如需按路由差异化，可改为在 yml 的 spring.cloud.gateway.globalcors 中配置。
-     */
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin(origin);
         config.addAllowedMethod("GET");
         config.addAllowedMethod("POST");
+        config.addAllowedMethod("PUT");
+        config.addAllowedMethod("DELETE");
         config.addAllowedMethod("OPTIONS");
         config.addAllowedHeader("*");
         config.setAllowCredentials(true);
