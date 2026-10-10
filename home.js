@@ -40,7 +40,7 @@ const HOUR = 60 * MIN;
 
 /* 信息流数据：来自后端 GET /api/posts（数据库持久化） */
 let posts = [];
-/* 关注关系仅保存在本地（关注接口尚未上线，不跨会话/设备同步） */
+/* 关注关系来自后端 follows 表（启动时拉取，跨会话/设备持久化）；键为被关注者 userId */
 const followed = new Set();
 
 /* 热门话题为静态运营内容（暂无后端接口） */
@@ -52,11 +52,11 @@ const trends = [
   { tag: "#今晚的月亮", posts: "2,406 条鸣响" }
 ];
 
-/* 推荐关注：handle 与数据库种子用户邮箱前缀一致，关注流可直接联动 */
+/* 推荐关注：handle 与数据库种子用户邮箱前缀一致；id 启动时经搜索接口解析，关注接口用 id */
 const suggestions = [
-  { name: "张三", handle: "zhangsan" },
-  { name: "李四", handle: "lisi" },
-  { name: "王五", handle: "wangwu" }
+  { name: "张三", handle: "zhangsan", id: null },
+  { name: "李四", handle: "lisi", id: null },
+  { name: "王五", handle: "wangwu", id: null }
 ];
 
 const AVATAR_PAIRS = [
@@ -140,9 +140,14 @@ function init() {
   $("#composer-avatar").style.setProperty("--b", b);
 
   renderTrends();
-  renderSuggestions();
   bindEvents();
-  loadFeed();
+  // 关注状态先于建议列表/信息流加载，保证首屏按钮与流正确
+  loadFollowed().then(() => {
+    renderSuggestions();
+    loadFeed();
+    loadSuggestions();
+  });
+  loadTrends();
 }
 
 /* ============ 接口：时间流 ============ */
@@ -150,7 +155,8 @@ async function loadFeed() {
   $("#feed-loading").classList.remove("hidden");
   $("#feed-error").classList.add("hidden");
   try {
-    const response = await fetch(`${API_BASE}/api/posts`, { headers: { Accept: "application/json" } });
+    const scope = activeTab === "following" ? "scope=following" : "";
+    const response = await fetch(`${API_BASE}/api/posts${scope ? "?" + scope : ""}`, { headers: authHeaders() });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     // 规范 §1.5：列表接口为分页包装 {items,...}，兼容旧裸数组
@@ -165,6 +171,93 @@ async function loadFeed() {
     $("#feed").classList.add("hidden");
     $("#empty-following").classList.add("hidden");
     $("#feed-error").classList.remove("hidden");
+  }
+}
+
+/* 统一鉴权请求头（读接口匿名时也携带，便于服务端计算 liked/mine） */
+function authHeaders(extra = {}) {
+  const token = loadToken();
+  return token ? { Accept: "application/json", Authorization: `Bearer ${token}`, ...extra } : { Accept: "application/json", ...extra };
+}
+
+/* ============ 接口：点赞（规范 §3.2.6/3.2.7） ============ */
+async function toggleLike(post, button) {
+  const willLike = !post.liked;
+  // 乐观更新 UI
+  post.liked = willLike;
+  post.likes += willLike ? 1 : -1;
+  button.classList.toggle("on", willLike);
+  button.querySelector("span").textContent = formatCount(post.likes);
+  try {
+    const response = await fetch(`${API_BASE}/api/posts/${post.id}/like`, {
+      method: willLike ? "POST" : "DELETE",
+      headers: authHeaders()
+    });
+    if (response.status === 401) { handleAuthExpired(); return; }
+    if (!response.ok) throw new Error();
+    // 以服务端计数为准（并发修正）
+    const data = await response.json();
+    post.liked = data.liked;
+    post.likes = data.likes;
+    button.classList.toggle("on", data.liked);
+    button.querySelector("span").textContent = formatCount(data.likes);
+  } catch {
+    // 失败回滚
+    post.liked = !willLike;
+    post.likes += willLike ? -1 : 1;
+    button.classList.toggle("on", post.liked);
+    button.querySelector("span").textContent = formatCount(post.likes);
+  }
+}
+
+/* ============ 接口：关注（规范 §3.3.1/3.3.2） ============ */
+async function loadFollowed() {
+  try {
+    const response = await fetch(`${API_BASE}/api/users/${me.id}/following?limit=50`, { headers: authHeaders() });
+    if (response.status === 401) { handleAuthExpired(); return; }
+    if (!response.ok) return;
+    const data = await response.json();
+    followed.clear();
+    (data.items || []).forEach((u) => followed.add(u.id));
+  } catch { /* 拉取失败按空关注处理，页面可重试 */ }
+}
+
+async function loadSuggestions() {
+  try {
+    const results = await Promise.all(suggestions.map((s) =>
+      fetch(`${API_BASE}/api/search?q=${encodeURIComponent(s.name)}&type=user`, { headers: authHeaders() })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null)
+    ));
+    results.forEach((data, i) => {
+      const hit = (data?.items || []).find((u) => u.handle === suggestions[i].handle);
+      if (hit) {
+        suggestions[i].id = hit.id;
+        if (hit.followedByMe) followed.add(hit.id); // 以服务端关注状态为准
+      }
+    });
+    renderSuggestions();
+  } catch { /* 建议区拉取失败时保持按钮禁用态 */ }
+}
+
+async function toggleFollow(s, btn) {
+  btn.disabled = true;
+  try {
+    const isFollowing = followed.has(s.id);
+    const response = await fetch(`${API_BASE}/api/users/${s.id}/follow`, {
+      method: isFollowing ? "DELETE" : "POST",
+      headers: authHeaders()
+    });
+    if (response.status === 401) { handleAuthExpired(); return; }
+    if (!response.ok) throw new Error();
+    if (isFollowing) followed.delete(s.id);
+    else followed.add(s.id);
+    renderSuggestions();
+    if (activeTab === "following") loadFeed();
+  } catch {
+    alert("操作失败，请稍后重试");
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -369,8 +462,8 @@ async function deleteOwnComment(button, chirp, post) {
 
 /* ============ 信息流渲染 ============ */
 function visiblePosts() {
+  // 关注流已由后端 scope=following 过滤；搜索时对当前列表做前端过滤
   let list = posts;
-  if (activeTab === "following") list = list.filter((p) => followed.has(p.author.handle));
   if (keyword) {
     const q = keyword.toLowerCase();
     list = list.filter((p) => p.text.toLowerCase().includes(q) || p.author.name.toLowerCase().includes(q) || p.author.handle.toLowerCase().includes(q));
@@ -450,9 +543,21 @@ function renderFeed(highlightId = null) {
 }
 
 /* ============ 右侧栏 ============ */
-function renderTrends() {
-  $("#trend-list").innerHTML = trends.map((t) => `
-    <li><a href="#explore"><strong>${escapeHTML(t.tag)}</strong><span>${escapeHTML(t.posts)}</span></a></li>`).join("");
+function renderTrends(list = trends) {
+  $("#trend-list").innerHTML = list.map((t) => `
+    <li><a href="/topic.html?tag=${encodeURIComponent(t.tag.replace(/^#/, ""))}"><strong>${escapeHTML(t.tag)}</strong><span>${escapeHTML(t.posts)}</span></a></li>`).join("");
+}
+
+/* 趋势榜改为真实统计：从近期帖子提取的话题热度；为空时保留运营占位 */
+async function loadTrends() {
+  try {
+    const r = await fetch(`${API_BASE}/api/hashtags/trending?limit=5`, { headers: authHeaders() });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (Array.isArray(data) && data.length > 0) {
+      renderTrends(data.map((t) => ({ tag: `#${t.tag}`, posts: `${t.postCount} 条鸣响` })));
+    }
+  } catch { /* 接口不可用时保留静态占位 */ }
 }
 
 function renderSuggestions() {
@@ -463,8 +568,8 @@ function renderSuggestions() {
         <strong>${escapeHTML(s.name)}</strong>
         <span>@${escapeHTML(s.handle)}</span>
       </div>
-      <button type="button" class="follow-btn ${followed.has(s.handle) ? "is-following" : ""}">
-        ${followed.has(s.handle) ? "已关注" : "关注"}
+      <button type="button" class="follow-btn ${followed.has(s.id) ? "is-following" : ""}"${s.id ? "" : " disabled"}>
+        ${followed.has(s.id) ? "已关注" : "关注"}
       </button>
     </li>`).join("");
 }
@@ -522,13 +627,15 @@ function bindEvents() {
 
   document.querySelectorAll(".feed-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
+      if (activeTab === tab.dataset.tab) return;
       activeTab = tab.dataset.tab;
       document.querySelectorAll(".feed-tab").forEach((t) => {
         const on = t === tab;
         t.classList.toggle("active", on);
         t.setAttribute("aria-selected", on);
       });
-      renderFeed();
+      // 关注流由后端 scope=following 过滤，切换标签需重新拉取
+      loadFeed();
     });
   });
 
@@ -551,10 +658,7 @@ function bindEvents() {
     if (button.classList.contains("action-comment")) {
       toggleCommentPanel(chirp, post);
     } else if (button.classList.contains("action-like")) {
-      post.liked = !post.liked;
-      post.likes += post.liked ? 1 : -1;
-      button.classList.toggle("on", post.liked);
-      count.textContent = formatCount(post.likes);
+      toggleLike(post, button);
     } else if (button.classList.contains("action-repost")) {
       post.reposted = !post.reposted;
       post.reposts += post.reposted ? 1 : -1;
@@ -580,15 +684,11 @@ function bindEvents() {
 
   $("#suggest-list").addEventListener("click", (event) => {
     const btn = event.target.closest(".follow-btn");
-    if (!btn) return;
-    const li = btn.closest("li");
-    const handle = li.dataset.handle;
-    const isFollowing = followed.has(handle);
-    if (isFollowing) followed.delete(handle);
-    else followed.add(handle);
-    btn.classList.toggle("is-following", !isFollowing);
-    btn.textContent = isFollowing ? "关注" : "已关注";
-    if (activeTab === "following") renderFeed();
+    if (!btn || btn.disabled) return;
+    const handle = btn.closest("li").dataset.handle;
+    const s = suggestions.find((x) => x.handle === handle);
+    if (!s || !s.id) return;
+    toggleFollow(s, btn);
   });
 
   let searchTimer = null;

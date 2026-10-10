@@ -814,3 +814,85 @@ a:hover { text-decoration: underline; }
   .composer { padding: 14px 14px 10px; }
   .chirp { padding: 13px 14px; }
 }
+
+/* ---------- 个人主页 ---------- */
+.profile-page { min-height: 100vh; }
+.profile-wrap { max-width: 640px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+
+.profile-topbar { display: flex; align-items: center; justify-content: space-between; }
+.profile-topbar .app-brand { display: flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; }
+.back-link { color: var(--muted); font-size: 14px; text-decoration: none; }
+.back-link:hover { color: var(--green); }
+
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px 16px;
+  align-items: start;
+}
+.avatar-xl { width: 84px; height: 84px; font-size: 34px; grid-row: span 2; }
+.profile-info h1 { margin: 0; font-size: 22px; }
+.profile-handle { margin: 2px 0 8px; color: var(--muted); font-size: 14px; }
+.profile-bio { margin: 0 0 6px; font-size: 14.5px; line-height: 1.6; word-break: break-word; }
+.profile-joined { margin: 0; color: var(--muted); font-size: 13px; }
+
+.edit-btn {
+  border: 1px solid var(--line);
+  background: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink);
+}
+.edit-btn:hover { border-color: var(--green); color: var(--green); }
+
+.profile-stats { grid-column: 1 / -1; display: flex; gap: 28px; list-style: none; margin: 8px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); }
+.profile-stats li { display: flex; align-items: baseline; gap: 6px; }
+.profile-stats strong { font-size: 17px; }
+.profile-stats span { color: var(--muted); font-size: 13px; }
+
+.edit-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px 22px; }
+.edit-card h2 { margin: 0 0 14px; font-size: 17px; }
+.edit-field { display: grid; gap: 6px; margin-bottom: 14px; }
+.edit-field span { font-size: 13px; color: var(--muted); }
+.edit-field input, .edit-field textarea {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px 13px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+  resize: vertical;
+}
+.edit-field input:focus, .edit-field textarea:focus { border-color: var(--green); background: var(--card); }
+.edit-status { min-height: 18px; margin: 0 0 10px; font-size: 13px; color: var(--danger); }
+.edit-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.btn-ghost { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 7px 18px; font: inherit; font-size: 13.5px; cursor: pointer; color: var(--ink); }
+.btn-primary { border: 0; border-radius: 999px; background: var(--green); color: #fff; font: inherit; font-size: 13.5px; font-weight: 600; padding: 7px 20px; cursor: pointer; }
+.btn-primary:hover:not(:disabled) { background: var(--green-dark); }
+.btn-primary:disabled { opacity: .45; cursor: default; }
+
+.profile-posts h2 { margin: 0 0 10px; font-size: 17px; }
+.profile-posts .feed { display: grid; gap: 0; }
+.profile-posts .chirp { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; }
+.action-static { color: var(--muted); font-size: 13px; margin-right: 18px; }
+
+@media (max-width: 600px) {
+  .profile-card { grid-template-columns: auto 1fr; }
+  .edit-btn { grid-column: 1 / -1; justify-self: start; }
+}
+
+/* ---------- 话题页 ---------- */
+.topic-head { grid-template-columns: auto 1fr; }
+.topic-mark { width: 72px; height: 72px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; grid-row: span 2; }
+.topic-head .profile-info { align-self: center; }
+.topic-head .profile-info h1 { color: var(--green); }

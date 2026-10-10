@@ -45,7 +45,7 @@
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4Z" /></svg>
             <span>收藏</span>
           </a>
-          <a class="nav-item" href="#profile">
+          <a class="nav-item" href="/profile.html">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" /></svg>
             <span>个人主页</span>
           </a>
@@ -95,10 +95,11 @@
           </div>
         </section>
 
+        <!-- 信息流加载状态（在 feed 外，避免 renderFeed 覆盖） -->
+        <p class="feed-loading" id="feed-loading">正在加载时间流…</p>
+
         <!-- 信息流 -->
-        <section class="feed" id="feed" aria-label="时间流">
-          <p class="feed-loading" id="feed-loading">正在加载时间流…</p>
-        </section>
+        <section class="feed" id="feed" aria-label="时间流"></section>
 
         <!-- 加载失败 -->
         <div class="empty-state hidden" id="feed-error">
