@@ -52,6 +52,11 @@ spring:
           predicates:
             - Path=/api/search/**
 
+        - id: chirp-hashtags-route
+          uri: lb://chirp-auth
+          predicates:
+            - Path=/api/hashtags/**
+
 app:
   cors-origin: http://localhost:4173
 

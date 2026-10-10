@@ -84,6 +84,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         if (method == HttpMethod.GET && path.matches("/api/users/\\d+")) return true;
         if (method == HttpMethod.GET && path.startsWith("/api/users/") && (path.contains("/posts") || path.contains("/followers") || path.contains("/following"))) return true;
         if (method == HttpMethod.GET && path.startsWith("/api/search")) return true;
+        if (method == HttpMethod.GET && path.startsWith("/api/hashtags")) return true;
         if (method == HttpMethod.GET && path.startsWith("/api/posts/") && path.contains("/comments")) return true;
         if (path.startsWith("/actuator")) return true;
         return false;
