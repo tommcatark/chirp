@@ -23,3 +23,7 @@ Thumbs.db
 *.jar
 *.war
 *.iml
+
+# 运行时产物（start-all.sh / stop-all.sh 产生）
+.run/
+

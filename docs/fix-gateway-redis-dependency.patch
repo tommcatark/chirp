@@ -1,0 +1,17 @@
+diff --git a/backend/chirp-gateway/pom.xml b/backend/chirp-gateway/pom.xml
+index c9cb525..4388406 100644
+--- a/backend/chirp-gateway/pom.xml
++++ b/backend/chirp-gateway/pom.xml
+@@ -40,6 +40,12 @@
+             <groupId>org.springframework.cloud</groupId>
+             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+         </dependency>
++        <!-- Reactive Redis：网关鉴权时从 Redis 校验 token 是否存在（WebFlux 响应式）。
++             被 ReactiveRedisTokenStore / JwtAuthGlobalFilter 使用，缺失会导致编译失败。 -->
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
++        </dependency>
+     </dependencies>
+ 
+     <build>
