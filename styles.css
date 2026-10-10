@@ -678,6 +678,101 @@ a:hover { text-decoration: underline; }
 .side-footer a:hover { color: var(--green); text-decoration: none; }
 .side-footer span { width: 100%; }
 
+/* ---------- 评论区 ---------- */
+.comment-panel {
+  margin-top: 14px;
+  padding: 4px 0 2px;
+  border-top: 1px solid var(--line);
+}
+
+.comment-list { display: grid; }
+
+.comment {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0 4px;
+  animation: comment-in .18s ease;
+}
+
+@keyframes comment-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.avatar-sm { width: 30px; height: 30px; font-size: 13px; flex: none; }
+
+.comment-main { flex: 1; min-width: 0; }
+
+.comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.comment-head strong { font-size: 13.5px; }
+.comment-head time { color: var(--muted); font-size: 12px; }
+.comment-content { margin: 2px 0 0; font-size: 14px; line-height: 1.55; word-break: break-word; }
+
+.comment-delete {
+  align-self: flex-start;
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.comment-delete:hover { color: var(--danger); background: rgba(196, 86, 79, .08); }
+.comment-delete:disabled { opacity: .45; cursor: default; }
+
+.comment-empty { margin: 8px 0; font-size: 13px; color: var(--muted); }
+.comment-error { color: var(--danger); }
+
+.comment-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 0 6px;
+}
+
+.comment-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13.5px;
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+
+.comment-input:focus { border-color: var(--green); background: var(--card); }
+
+.comment-send {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+
+.comment-send:hover:not(:disabled) { background: var(--green-dark); }
+.comment-send:disabled { opacity: .45; cursor: default; }
+
 /* ---------- 响应式 ---------- */
 @media (max-width: 1080px) {
   .app-shell { grid-template-columns: 232px minmax(0, 1fr); max-width: 900px; }

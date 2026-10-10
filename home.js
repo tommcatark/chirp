@@ -119,7 +119,7 @@ function normalizePost(p) {
     likes: p.likes || 0,
     reposts: p.reposts || 0,
     comments: p.comments || 0,
-    liked: false,
+    liked: !!p.liked,
     reposted: false
   };
 }
@@ -153,7 +153,9 @@ async function loadFeed() {
     const response = await fetch(`${API_BASE}/api/posts`, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    posts = (Array.isArray(data) ? data : []).map(normalizePost);
+    // 规范 §1.5：列表接口为分页包装 {items,...}，兼容旧裸数组
+    const items = Array.isArray(data) ? data : data.items || [];
+    posts = items.map(normalizePost);
     $("#feed-loading").classList.add("hidden");
     $("#feed-error").classList.add("hidden");
     renderFeed();
@@ -182,15 +184,187 @@ async function createPost(content) {
   if (!response.ok) {
     // 令牌缺失/过期/无效（网关或认证服务返回 401）：清理并回到登录页
     if (response.status === 401) {
-      if (!authExpired) {
-        authExpired = true;
-        clearAuthAndRedirect();
-      }
+      handleAuthExpired();
       return null;
     }
     throw new Error(data.message || "发布失败，请稍后重试");
   }
   return normalizePost(data);
+}
+
+/* ============ 接口：评论（规范 §3.2.8-3.2.10） ============ */
+function handleAuthExpired() {
+  if (!authExpired) {
+    authExpired = true;
+    clearAuthAndRedirect();
+  }
+}
+
+/* 将后端 CommentResponse 归一化为前端渲染结构 */
+function normalizeComment(c) {
+  return {
+    id: c.id,
+    userId: c.userId,
+    author: { name: c.authorName, handle: c.authorHandle },
+    createdAt: Date.parse(c.createdAt) || Date.now(),
+    text: c.content,
+    mine: !!c.mine
+  };
+}
+
+async function fetchComments(postId) {
+  const headers = { Accept: "application/json" };
+  const token = loadToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${API_BASE}/api/posts/${postId}/comments?offset=0&limit=50`, { headers });
+  if (response.status === 401) {
+    handleAuthExpired();
+    return null;
+  }
+  if (!response.ok) throw new Error("评论加载失败，请稍后重试");
+  const data = await response.json();
+  const items = Array.isArray(data) ? data : data.items || [];
+  return items.map(normalizeComment);
+}
+
+async function createComment(postId, content) {
+  const token = loadToken();
+  const response = await fetch(`${API_BASE}/api/posts/${postId}/comments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    // 评论者身份由 token 解析，请求体仅含内容
+    body: JSON.stringify({ content })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    handleAuthExpired();
+    return null;
+  }
+  if (!response.ok) throw new Error(data.message || "评论失败，请稍后重试");
+  return normalizeComment(data);
+}
+
+async function removeComment(commentId) {
+  const token = loadToken();
+  const response = await fetch(`${API_BASE}/api/comments/${commentId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (response.status === 401) {
+    handleAuthExpired();
+    return false;
+  }
+  if (!response.ok) throw new Error("删除失败，请稍后重试");
+  return true;
+}
+
+/* ============ 评论面板 ============ */
+function commentHTML(c) {
+  return `
+    <div class="comment" data-cid="${c.id}">
+      ${avatarHTML(c.userId, c.author.name, "avatar-sm")}
+      <div class="comment-main">
+        <p class="comment-head">
+          <strong>${escapeHTML(c.author.name)}</strong>
+          <span class="handle">@${escapeHTML(c.author.handle)}</span>
+          <span class="dot">·</span>
+          <time>${timeAgo(c.createdAt)}</time>
+        </p>
+        <p class="comment-content">${escapeHTML(c.text)}</p>
+      </div>
+      ${c.mine ? `<button type="button" class="comment-delete" title="删除这条评论">删除</button>` : ""}
+    </div>`;
+}
+
+/* 渲染评论列表（空态/内容态），并同步面板缓存标记 */
+function renderCommentList(panel, list) {
+  const listEl = panel.querySelector(".comment-list");
+  listEl.innerHTML = list.length
+    ? list.map(commentHTML).join("")
+    : `<p class="comment-empty">还没有评论，来抢沙发。</p>`;
+}
+
+/* 展开时懒加载评论，收起时保留已加载内容（再次展开不重复请求） */
+async function toggleCommentPanel(chirp, post) {
+  const panel = chirp.querySelector(".comment-panel");
+  const willShow = panel.classList.contains("hidden");
+  panel.classList.toggle("hidden", !willShow);
+  if (!willShow || panel.dataset.loaded === "1") return;
+
+  const listEl = panel.querySelector(".comment-list");
+  listEl.innerHTML = `<p class="comment-empty">评论加载中…</p>`;
+  try {
+    const items = await fetchComments(post.id);
+    if (items === null) return; // 401 已触发跳转
+    renderCommentList(panel, items);
+    panel.dataset.loaded = "1";
+  } catch (error) {
+    // 保留未加载状态，收起再展开即可重试
+    listEl.innerHTML = `<p class="comment-empty comment-error">${escapeHTML(error.message)}</p>`;
+  }
+}
+
+/* 帖子卡片上的评论计数与 posts 数组联动 */
+function updateCommentCount(post, delta) {
+  post.comments = Math.max(0, (post.comments || 0) + delta);
+  const node = document.querySelector(`.chirp[data-id="${post.id}"] .action-comment span`);
+  if (node) node.textContent = formatCount(post.comments);
+}
+
+/* 发表评论：成功后追加到列表并联动计数 */
+async function submitComment(form) {
+  const chirp = form.closest(".chirp");
+  const post = posts.find((p) => p.id === Number(chirp.dataset.id));
+  if (!post) return;
+  const input = form.querySelector(".comment-input");
+  const sendBtn = form.querySelector(".comment-send");
+  const content = input.value.trim();
+  if (!content) return;
+
+  sendBtn.disabled = true;
+  sendBtn.textContent = "发送中…";
+  try {
+    const created = await createComment(post.id, content);
+    if (!created) return; // 401 已触发跳转
+    const listEl = form.closest(".comment-panel").querySelector(".comment-list");
+    const empty = listEl.querySelector(".comment-empty");
+    if (empty) empty.remove();
+    listEl.insertAdjacentHTML("beforeend", commentHTML(created));
+    form.closest(".comment-panel").dataset.loaded = "1";
+    input.value = "";
+    updateCommentCount(post, 1);
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    sendBtn.textContent = "发送";
+    sendBtn.disabled = input.value.trim().length === 0;
+  }
+}
+
+/* 删除自己的评论：确认后调接口，从列表移除并联动计数 */
+async function deleteOwnComment(button, chirp, post) {
+  const commentNode = button.closest(".comment");
+  const commentId = Number(commentNode.dataset.cid);
+  if (!post || !commentId) return;
+  if (!window.confirm("确定删除这条评论吗？")) return;
+
+  button.disabled = true;
+  try {
+    const removed = await removeComment(commentId);
+    if (!removed) return; // 401 已触发跳转
+    commentNode.remove();
+    updateCommentCount(post, -1);
+    const listEl = chirp.querySelector(".comment-list");
+    if (!listEl.querySelector(".comment")) {
+      listEl.innerHTML = `<p class="comment-empty">还没有评论，来抢沙发。</p>`;
+    }
+  } catch (error) {
+    button.disabled = false;
+    alert(error.message);
+  }
 }
 
 /* ============ 信息流渲染 ============ */
@@ -232,6 +406,14 @@ function postHTML(post) {
           <button type="button" class="action action-share" title="分享">
             <svg viewBox="0 0 24 24" width="17" height="17"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3M8 7l4-4 4 4" /></svg>
           </button>
+        </div>
+        <div class="comment-panel hidden">
+          <div class="comment-list"></div>
+          <form class="comment-form">
+            ${avatarHTML(me.id || me.email, me.name, "avatar-sm")}
+            <input type="text" class="comment-input" maxlength="500" placeholder="发表你的评论…" autocomplete="off">
+            <button type="submit" class="comment-send" disabled>发送</button>
+          </form>
         </div>
       </div>
     </article>`;
@@ -351,14 +533,24 @@ function bindEvents() {
   });
 
   $("#feed").addEventListener("click", (event) => {
-    const button = event.target.closest(".action");
-    if (!button) return;
-    const chirp = button.closest(".chirp");
+    const chirp = event.target.closest(".chirp");
+    if (!chirp) return;
     const post = posts.find((p) => p.id === Number(chirp.dataset.id));
-    if (!post) return;
+
+    // 删除自己的评论
+    const deleteBtn = event.target.closest(".comment-delete");
+    if (deleteBtn) {
+      deleteOwnComment(deleteBtn, chirp, post);
+      return;
+    }
+
+    const button = event.target.closest(".action");
+    if (!button || !post) return;
     const count = button.querySelector("span");
 
-    if (button.classList.contains("action-like")) {
+    if (button.classList.contains("action-comment")) {
+      toggleCommentPanel(chirp, post);
+    } else if (button.classList.contains("action-like")) {
       post.liked = !post.liked;
       post.likes += post.liked ? 1 : -1;
       button.classList.toggle("on", post.liked);
@@ -369,6 +561,21 @@ function bindEvents() {
       button.classList.toggle("on", post.reposted);
       count.textContent = formatCount(post.reposts);
     }
+  });
+
+  // 评论输入：有内容才能发送
+  $("#feed").addEventListener("input", (event) => {
+    if (!event.target.classList.contains("comment-input")) return;
+    const form = event.target.closest(".comment-form");
+    form.querySelector(".comment-send").disabled = event.target.value.trim().length === 0;
+  });
+
+  // 评论提交（表单代理到 #feed，动态卡片无需重复绑定）
+  $("#feed").addEventListener("submit", (event) => {
+    const form = event.target.closest(".comment-form");
+    if (!form) return;
+    event.preventDefault();
+    submitComment(form);
   });
 
   $("#suggest-list").addEventListener("click", (event) => {
