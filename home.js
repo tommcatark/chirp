@@ -120,7 +120,8 @@ function normalizePost(p) {
     reposts: p.reposts || 0,
     comments: p.comments || 0,
     liked: !!p.liked,
-    reposted: false
+    reposted: false,
+    mine: !!p.mine
   };
 }
 
@@ -283,6 +284,21 @@ async function createPost(content) {
     throw new Error(data.message || "发布失败，请稍后重试");
   }
   return normalizePost(data);
+}
+
+/* ============ 接口：删除自己的帖子 ============ */
+async function deletePost(postId) {
+  const token = loadToken();
+  const response = await fetch(`${API_BASE}/api/posts/${postId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (response.status === 401) {
+    handleAuthExpired();
+    return { ok: false, status: 401 };
+  }
+  // 204 删除成功；403 非作者；404 帖子不存在
+  return { ok: response.ok || response.status === 204, status: response.status };
 }
 
 /* ============ 接口：评论（规范 §3.2.8-3.2.10） ============ */
@@ -460,6 +476,29 @@ async function deleteOwnComment(button, chirp, post) {
   }
 }
 
+/* 删除自己的帖子：确认后调接口，成功后从信息流移除 */
+async function deleteOwnPost(post, chirpNode) {
+  if (!post || !post.id) return;
+  if (!window.confirm("确定删除这条鸣响吗？删除后不可恢复，其评论和点赞也会一并删除。")) return;
+
+  const btn = chirpNode.querySelector(".post-delete");
+  if (btn) btn.disabled = true;
+  try {
+    const result = await deletePost(post.id);
+    if (result.status === 401) return; // 已触发跳登录
+    if (!result.ok) {
+      if (btn) btn.disabled = false;
+      alert(result.status === 403 ? "只能删除自己的鸣响" : "删除失败，请稍后重试");
+      return;
+    }
+    posts = posts.filter((p) => p.id !== post.id);
+    renderFeed();
+  } catch {
+    if (btn) btn.disabled = false;
+    alert("删除失败，请稍后重试");
+  }
+}
+
 /* ============ 信息流渲染 ============ */
 function visiblePosts() {
   // 关注流已由后端 scope=following 过滤；搜索时对当前列表做前端过滤
@@ -481,6 +520,9 @@ function postHTML(post) {
           <span class="handle">@${escapeHTML(post.author.handle)}</span>
           <span class="dot">·</span>
           <time>${timeAgo(post.createdAt)}</time>
+          ${post.mine ? `<button type="button" class="post-delete" title="删除这条鸣响" aria-label="删除这条鸣响">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6M10 11v6M14 11v6"/></svg>
+          </button>` : ""}
         </p>
         <p class="chirp-content">${escapeHTML(post.text)}</p>
         <div class="chirp-foot">
@@ -648,6 +690,13 @@ function bindEvents() {
     const deleteBtn = event.target.closest(".comment-delete");
     if (deleteBtn) {
       deleteOwnComment(deleteBtn, chirp, post);
+      return;
+    }
+
+    // 删除自己的帖子（仅本人卡片显示按钮）
+    const postDeleteBtn = event.target.closest(".post-delete");
+    if (postDeleteBtn && post) {
+      deleteOwnPost(post, chirp);
       return;
     }
 

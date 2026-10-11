@@ -54,7 +54,41 @@ function init() {
     return;
   }
   bindEditForm();
+  bindPostDelete();
   loadProfile().then((ok) => { if (ok) loadMyPosts(); });
+}
+
+/* 删除我的帖子（事件代理，动态渲染无需重复绑定） */
+function bindPostDelete() {
+  $("#my-posts").addEventListener("click", async (event) => {
+    const btn = event.target.closest(".post-delete");
+    if (!btn) return;
+    const node = btn.closest(".chirp");
+    const postId = Number(node?.dataset.id);
+    if (!postId) return;
+    if (!window.confirm("确定删除这条鸣响吗？删除后不可恢复，其评论和点赞也会一并删除。")) return;
+
+    btn.disabled = true;
+    try {
+      const r = await fetch(`${API_BASE}/api/posts/${postId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${loadToken()}` }
+      });
+      if (r.status === 401) { location.replace("/"); return; }
+      if (!r.ok && r.status !== 204) {
+        btn.disabled = false;
+        alert(r.status === 403 ? "只能删除自己的鸣响" : "删除失败，请稍后重试");
+        return;
+      }
+      node.remove();
+      profile.postCount = Math.max(0, (profile.postCount ?? 1) - 1);
+      $("#st-posts").textContent = profile.postCount;
+      $("#posts-empty").classList.toggle("hidden", $("#my-posts").children.length > 0);
+    } catch {
+      btn.disabled = false;
+      alert("删除失败，请稍后重试");
+    }
+  });
 }
 
 async function loadProfile() {
@@ -97,7 +131,7 @@ async function loadMyPosts() {
     $("#posts-loading").classList.add("hidden");
     $("#posts-empty").classList.toggle("hidden", items.length > 0);
     $("#my-posts").innerHTML = items.map((p) => `
-      <article class="chirp">
+      <article class="chirp" data-id="${p.id}">
         <div class="avatar avatar-lg" style="--a:${avatarPair(p.userId)[0]};--b:${avatarPair(p.userId)[1]}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
         <div class="chirp-main">
           <p class="chirp-head">
@@ -105,6 +139,9 @@ async function loadMyPosts() {
             <span class="handle">@${escapeHTML(p.authorHandle)}</span>
             <span class="dot">·</span>
             <time>${timeAgo(Date.parse(p.createdAt) || Date.now())}</time>
+            <button type="button" class="post-delete" title="删除这条鸣响" aria-label="删除这条鸣响">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6M10 11v6M14 11v6"/></svg>
+            </button>
           </p>
           <p class="chirp-content">${escapeHTML(p.content)}</p>
           <div class="chirp-foot">
