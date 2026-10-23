@@ -198,7 +198,41 @@ ALTER TABLE notifications ADD CONSTRAINT ck_notifications_type
     CHECK (type IN ('like', 'comment', 'follow'));
 
 -- ============================================================================
--- 8. 补充索引 — 外键索引（PostgreSQL 不自动为外键创建索引，需手动添加）
+-- 8. messages 表 — 私信（一对一消息）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS messages (
+    id           BIGSERIAL    PRIMARY KEY,                        -- 主键
+    sender_id    BIGINT       NOT NULL,                           -- 发送者
+    recipient_id BIGINT       NOT NULL,                           -- 接收者
+    content      VARCHAR(500) NOT NULL,                           -- 消息正文，1-500字符
+    is_read      BOOLEAN      NOT NULL DEFAULT false,             -- 是否已读（接收者维度）
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()              -- 发送时间
+);
+
+COMMENT ON TABLE  messages IS '私信表 — 存储用户之间的一对一消息';
+COMMENT ON COLUMN messages.sender_id    IS '发送者，外键关联users.id，删除用户时级联删除消息';
+COMMENT ON COLUMN messages.recipient_id IS '接收者，外键关联users.id，删除用户时级联删除消息';
+COMMENT ON COLUMN messages.content      IS '消息正文，1-500字符';
+COMMENT ON COLUMN messages.is_read      IS '是否已读（接收者维度），默认false';
+
+-- 外键：删除用户时级联删除其发送的所有消息
+ALTER TABLE messages ADD CONSTRAINT fk_messages_sender
+    FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE;
+
+-- 外键：删除用户时级联删除其接收的所有消息
+ALTER TABLE messages ADD CONSTRAINT fk_messages_recipient
+    FOREIGN KEY (recipient_id) REFERENCES users (id) ON DELETE CASCADE;
+
+-- CHECK 约束：消息内容长度 1-500 字符
+ALTER TABLE messages ADD CONSTRAINT ck_messages_content_length
+    CHECK (char_length(content) BETWEEN 1 AND 500);
+
+-- CHECK 约束：禁止给自己发消息
+ALTER TABLE messages ADD CONSTRAINT ck_messages_no_self
+    CHECK (sender_id <> recipient_id);
+
+-- ============================================================================
+-- 9. 补充索引 — 外键索引（PostgreSQL 不自动为外键创建索引，需手动添加）
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_tokens_user_id       ON tokens       (user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_user_id        ON posts        (user_id);
@@ -212,5 +246,9 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_id    ON notifications (user_i
 CREATE INDEX IF NOT EXISTS idx_notifications_actor_id   ON notifications (actor_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_post_id    ON notifications (post_id) WHERE post_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notifications_comment_id ON notifications (comment_id) WHERE comment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_messages_sender_id     ON messages     (sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_recipient_id  ON messages     (recipient_id);
+-- 会话查询复合索引：两人之间按时间倒序
+CREATE INDEX IF NOT EXISTS idx_messages_pair_created  ON messages     (sender_id, recipient_id, created_at DESC);
 
 COMMIT;

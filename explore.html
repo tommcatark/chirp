@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>探索 · 鸣 Chirp</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230e9f6e'/%3E%3Crect x='5' y='10' width='3.4' height='8' rx='1.7' fill='white'/%3E%3Crect x='10.3' y='5.5' width='3.4' height='13' rx='1.7' fill='white'/%3E%3Crect x='15.6' y='9' width='3.4' height='9.5' rx='1.7' fill='white'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="profile-page">
+  <main class="profile-wrap">
+    <header class="profile-topbar">
+      <a class="brand-mark app-brand" href="/home.html" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#0e9f6e"/><rect x="5" y="10" width="3.4" height="8" rx="1.7" fill="#fff"/><rect x="10.3" y="5.5" width="3.4" height="13" rx="1.7" fill="#fff"/><rect x="15.6" y="9" width="3.4" height="9.5" rx="1.7" fill="#fff"/></svg>
+        <strong>鸣 Chirp</strong>
+      </a>
+      <a class="back-link" href="/home.html">← 返回首页</a>
+    </header>
+
+    <!-- 搜索框 -->
+    <label class="search-box explore-search">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <input type="search" id="explore-search" placeholder="搜索帖子、话题或用户" aria-label="搜索" />
+    </label>
+
+    <!-- 搜索结果视图（默认隐藏） -->
+    <section class="hidden" id="search-view">
+      <div class="feed-tabs explore-tabs" role="tablist" aria-label="搜索结果类型">
+        <button class="feed-tab active" type="button" data-type="post" role="tab" aria-selected="true">帖子</button>
+        <button class="feed-tab" type="button" data-type="user" role="tab" aria-selected="false">用户</button>
+      </div>
+      <p class="feed-loading" id="search-loading">正在搜索…</p>
+      <div id="search-results" class="feed"></div>
+      <div class="empty-state hidden" id="search-empty">
+        <h3>没有找到相关内容</h3>
+        <p>换个关键词试试，或回到下方看看趋势话题。</p>
+      </div>
+    </section>
+
+    <!-- 默认探索视图 -->
+    <div id="explore-view">
+      <section class="side-card">
+        <h3>正在鸣响</h3>
+        <ul class="trend-list" id="explore-trends"></ul>
+        <p class="explore-empty-line hidden" id="trends-empty">暂无趋势话题</p>
+      </section>
+
+      <section class="side-card">
+        <h3>活跃作者</h3>
+        <ul class="suggest-list" id="explore-users"></ul>
+        <p class="explore-empty-line hidden" id="users-empty">暂时没有可推荐的作者</p>
+      </section>
+
+      <section class="explore-latest">
+        <h3 class="explore-section-title">最新鸣响</h3>
+        <p class="feed-loading" id="posts-loading">正在加载…</p>
+        <div id="explore-posts" class="feed"></div>
+        <div class="empty-state hidden" id="explore-posts-empty">
+          <h3>还没有任何鸣响</h3>
+          <p>回到首页发布第一条吧。</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/explore.js"></script>
+</body>
+</html>

@@ -149,6 +149,36 @@ function init() {
     loadSuggestions();
   });
   loadTrends();
+  loadUnreadBadge();
+}
+
+/* 导航通知角标：拉取真实未读数，0 时隐藏 */
+async function loadUnreadBadge() {
+  const badge = $("#nav-notif-badge");
+  if (!badge) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/notifications?limit=1`, { headers: authHeaders() });
+    if (!r.ok) return;
+    const data = await r.json();
+    const count = data.unreadCount ?? 0;
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.classList.toggle("hidden", count === 0);
+  } catch { /* 接口不可用时保持隐藏 */ }
+  loadMsgBadge();
+}
+
+/* 导航私信角标：拉取未读私信数，0 时隐藏 */
+async function loadMsgBadge() {
+  const badge = $("#nav-msg-badge");
+  if (!badge) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/messages/unread-count`, { headers: authHeaders() });
+    if (!r.ok) return;
+    const data = await r.json();
+    const count = data.unreadCount ?? 0;
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.classList.toggle("hidden", count === 0);
+  } catch { /* 接口不可用时保持隐藏 */ }
 }
 
 /* ============ 接口：时间流 ============ */

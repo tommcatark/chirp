@@ -918,3 +918,81 @@ a:hover { text-decoration: underline; }
 .post-delete:hover { color: var(--danger); background: rgba(196, 86, 79, .08); }
 .post-delete:disabled { opacity: .45; cursor: default; }
 @media (hover: none) { .post-delete { opacity: .75; } }
+
+/* ---------- 探索页 ---------- */
+#explore-view { display: grid; gap: 16px; }
+.explore-search { margin: 0; padding: 13px 18px; }
+.explore-search input { font-size: 15px; }
+.explore-tabs { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fff; margin-bottom: 12px; }
+.explore-section-title { font-size: 16px; margin: 0 0 10px; padding: 0 4px; }
+.explore-empty-line { margin: 0; padding: 12px 16px 16px; font-size: 13px; color: var(--muted); }
+.explore-latest .feed { border-top: 1px solid var(--line); }
+.explore-user-list { list-style: none; margin: 0; padding: 0; background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.explore-user-bio { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+.explore-user-list .suggest-meta, .side-card .suggest-meta { min-width: 0; flex: 1; }
+
+/* ---------- 通知页 ---------- */
+.notif-head { display: flex; align-items: center; gap: 12px; padding: 4px 4px 0; }
+.notif-head h1 { font-size: 22px; margin: 0; }
+.notif-unread { font-size: 13px; color: var(--green); font-weight: 600; }
+.notif-mark-all { margin-left: auto; border: 0; background: none; color: var(--green); font-size: 13.5px; font-weight: 600; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+.notif-mark-all:hover:not(:disabled) { background: rgba(14, 159, 110, .08); }
+.notif-mark-all:disabled { color: var(--muted); cursor: default; }
+
+.notif-list { list-style: none; margin: 0; padding: 0; background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.notif-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); cursor: default; transition: background .15s ease; }
+.notif-item:last-child { border-bottom: 0; }
+.notif-item.is-unread { background: #f2faf6; cursor: pointer; }
+.notif-item.is-unread:hover { background: #e9f6f0; }
+.notif-icon { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #eef4f1; color: var(--green); }
+.notif-icon svg path, .notif-icon svg circle { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.notif-icon-like { background: #fdeef0; color: #d6455b; }
+.notif-icon-comment { background: #edf3fd; color: #3b7dd8; }
+.notif-item .avatar { flex-shrink: 0; width: 38px; height: 38px; font-size: 14px; }
+.notif-body { min-width: 0; flex: 1; }
+.notif-line { margin: 0; font-size: 14px; line-height: 1.5; }
+.notif-line .handle { color: var(--muted); font-size: 12.5px; }
+.notif-quote { margin: 4px 0 0; padding: 6px 10px; border-left: 3px solid var(--line); font-size: 13px; color: var(--muted); line-height: 1.55; word-break: break-word; }
+.notif-time { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.notif-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: transparent; margin-top: 8px; }
+.notif-item.is-unread .notif-dot { background: var(--green); }
+.notif-load-more { display: block; margin: 14px auto 0; padding: 9px 22px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font-size: 13.5px; cursor: pointer; }
+.notif-load-more:hover { background: #f6f9f7; }
+
+/* ---------- 消息页 ---------- */
+.msg-head { display: flex; align-items: center; gap: 12px; padding: 4px 4px 0; }
+.msg-head h1 { font-size: 22px; margin: 0; }
+
+.conv-list { list-style: none; margin: 0; padding: 0; background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.conv-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s ease; }
+.conv-item:last-child { border-bottom: 0; }
+.conv-item:hover { background: #f6f9f7; }
+.conv-item .avatar { flex-shrink: 0; width: 44px; height: 44px; }
+.conv-body { min-width: 0; flex: 1; }
+.conv-line { display: flex; align-items: baseline; gap: 6px; margin: 0; font-size: 14px; }
+.conv-line .handle { color: var(--muted); font-size: 12.5px; }
+.conv-line time { margin-left: auto; flex-shrink: 0; font-size: 12px; color: var(--muted); }
+.conv-preview { margin: 2px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv-item.is-unread .conv-preview { color: var(--ink); font-weight: 600; }
+.conv-badge { flex-shrink: 0; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--green); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+
+/* 聊天视图 */
+.chat-head { display: flex; align-items: center; gap: 12px; padding: 4px 4px 12px; }
+.chat-back { border: 0; background: none; color: var(--green); font-size: 15px; font-weight: 600; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+.chat-back:hover { background: rgba(14, 159, 110, .08); }
+.chat-head .avatar { flex-shrink: 0; width: 38px; height: 38px; font-size: 14px; }
+.chat-peer { min-width: 0; }
+.chat-peer strong { display: block; font-size: 15px; }
+.chat-peer .handle { color: var(--muted); font-size: 12.5px; }
+
+.chat-body { background: #fff; border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0; padding: 14px 16px; min-height: 300px; max-height: 55vh; overflow-y: auto; }
+.chat-body .notif-load-more { margin: 0 auto 12px; }
+.msg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.msg-item { max-width: 75%; padding: 9px 13px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; }
+.msg-item.mine { align-self: flex-end; background: var(--green); color: #fff; border-bottom-right-radius: 4px; }
+.msg-item.theirs { align-self: flex-start; background: #f0f4f2; color: var(--ink); border-bottom-left-radius: 4px; }
+.msg-item time { display: block; margin-top: 3px; font-size: 11px; opacity: .7; }
+
+.chat-composer { display: flex; gap: 10px; align-items: flex-end; background: #fff; border: 1px solid var(--line); border-radius: 0 0 16px 16px; padding: 12px 14px; }
+.chat-composer textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; font: inherit; font-size: 14px; line-height: 1.5; max-height: 120px; outline: none; }
+.chat-composer textarea:focus { border-color: var(--green); }
