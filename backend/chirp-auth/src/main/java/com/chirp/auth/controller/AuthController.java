@@ -6,6 +6,7 @@ import com.chirp.common.model.AuthDTO;
 import com.chirp.common.model.User;
 import com.chirp.common.security.TokenStoreService;
 import com.chirp.common.util.PasswordEncoderUtil;
+import com.chirp.common.util.UserUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -145,7 +146,6 @@ public class AuthController {
     }
 
     static String handleOf(String email) {
-        int at = email.indexOf('@');
-        return at > 0 ? email.substring(0, at) : email;
+        return UserUtil.handleOf(email);
     }
 }

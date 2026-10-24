@@ -20,37 +20,37 @@ spring:
             - Path=/api/auth/**
 
         - id: chirp-posts-route
-          uri: http://localhost:8081
+          uri: http://localhost:8082
           predicates:
             - Path=/api/posts/**
 
         - id: chirp-users-route
-          uri: http://localhost:8081
+          uri: http://localhost:8083
           predicates:
             - Path=/api/users/**
 
         - id: chirp-comments-route
-          uri: http://localhost:8081
+          uri: http://localhost:8082
           predicates:
             - Path=/api/comments/**
 
         - id: chirp-notifications-route
-          uri: http://localhost:8081
+          uri: http://localhost:8084
           predicates:
             - Path=/api/notifications/**
 
         - id: chirp-search-route
-          uri: http://localhost:8081
+          uri: http://localhost:8082
           predicates:
             - Path=/api/search/**
 
         - id: chirp-hashtags-route
-          uri: http://localhost:8081
+          uri: http://localhost:8082
           predicates:
             - Path=/api/hashtags/**
 
         - id: chirp-messages-route
-          uri: http://localhost:8081
+          uri: http://localhost:8084
           predicates:
             - Path=/api/messages/**
 

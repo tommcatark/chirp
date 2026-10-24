@@ -23,6 +23,9 @@
         <module>chirp-common</module>
         <module>chirp-gateway</module>
         <module>chirp-auth</module>
+        <module>chirp-posts</module>
+        <module>chirp-users</module>
+        <module>chirp-social</module>
     </modules>
 
     <properties>
