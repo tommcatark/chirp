@@ -1,6 +1,9 @@
 ﻿# Dependencies
 node_modules/
 
+# 后端已拆分为独立仓库（shirp-q-api）
+backend/
+
 # Logs
 *.log
 npm-debug.log*
