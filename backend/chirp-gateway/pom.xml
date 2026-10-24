@@ -25,21 +25,6 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
-        <!-- Nacos 服务发现：网关通过 Nacos 动态路由到各微服务 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
-        <!-- Nacos 配置中心：网关自身配置也可托管到 Nacos -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-        <!-- Spring Cloud LoadBalancer（替代 Ribbon 的客户端负载均衡） -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-        </dependency>
         <!-- Redis 响应式客户端：网关鉴权过滤器经 ReactiveRedisTokenStore 校验 token（规范 D1） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

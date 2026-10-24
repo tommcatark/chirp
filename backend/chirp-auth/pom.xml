@@ -41,21 +41,6 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Nacos 服务发现：将 chirp-auth 注册到 Nacos，供网关路由 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
-        <!-- Nacos 配置中心：可将 application.yml 托管到 Nacos 动态刷新 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-        <!-- Spring Boot Actuator（健康检查，Nacos 心跳感知） -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
         <!-- Redis：JWT token 存储，支持登出主动失效 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

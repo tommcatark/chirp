@@ -12,53 +12,45 @@ spring:
       port: 6379
 
   cloud:
-    nacos:
-      server-addr: localhost:8848
-      discovery:
-        register-enabled: true
-      config:
-        import-check:
-          enabled: false
-
     gateway:
       routes:
         - id: chirp-auth-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/auth/**
 
         - id: chirp-posts-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/posts/**
 
         - id: chirp-users-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/users/**
 
         - id: chirp-comments-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/comments/**
 
         - id: chirp-notifications-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/notifications/**
 
         - id: chirp-search-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/search/**
 
         - id: chirp-hashtags-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/hashtags/**
 
         - id: chirp-messages-route
-          uri: lb://chirp-auth
+          uri: http://localhost:8081
           predicates:
             - Path=/api/messages/**
 

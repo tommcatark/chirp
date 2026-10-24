@@ -4,7 +4,7 @@ server:
 
 spring:
   application:
-    # 服务名（Nacos 注册名，网关路由 uri 中的 lb://chirp-auth 需与此一致）
+    # 服务名
     name: chirp-auth
 
   # ===== 数据源配置（PostgreSQL） =====
@@ -26,25 +26,7 @@ spring:
       host: localhost
       port: 6379
 
-  # ===== Nacos 服务发现与配置中心 =====
-  cloud:
-    nacos:
-      # Nacos Server 地址（需先启动 Nacos，默认端口 8848）
-      server-addr: localhost:8848
-      discovery:
-        # 注册到 Nacos，供网关发现和路由
-        register-enabled: true
-      config:
-        # 暂不使用 Nacos 配置中心，仅使用服务发现
-        import-check:
-          enabled: false
 
-# ===== Actuator 端点配置（Nacos 健康检查使用） =====
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
 
 # ===== JWT 登录令牌配置 =====
 # secret 必须与 chirp-gateway 完全一致；生产环境务必通过环境变量 CHIRP_JWT_SECRET 覆盖（≥32 字节）

@@ -9,10 +9,10 @@ package com.chirp.common.model;
  */
 public final class ServiceConstants {
 
-    /** Nacos 服务发现 ID — 认证服务 */
+    /** 认证服务 ID */
     public static final String AUTH_SERVICE_ID = "chirp-auth";
 
-    /** Nacos 服务发现 ID — 网关服务（网关自身不注册，仅作常量备用） */
+    /** 网关服务 ID */
     public static final String GATEWAY_SERVICE_ID = "chirp-gateway";
 
     /** 认证服务路由前缀（网关以此前缀转发到 chirp-auth） */
