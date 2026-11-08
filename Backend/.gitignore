@@ -1,0 +1,19 @@
+# Java / Maven
+**/target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志与环境变量
+*.log
+.env
+.env.*

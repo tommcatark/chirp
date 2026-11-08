@@ -1,0 +1,44 @@
+# ==================== chirp-social 社交服务配置 ====================
+server:
+  port: 8084
+
+spring:
+  application:
+    name: chirp-social
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chirp
+    username: postgres
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  kafka:
+    bootstrap-servers: 192.168.121.131:9092,192.168.121.132:9092,192.168.121.133:9092
+    consumer:
+      group-id: chirp-social-notification
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.chirp.common.model"
+        spring.json.value.default.type: "com.chirp.common.model.NotificationEvent"
+
+chirp:
+  jwt:
+    secret: ${CHIRP_JWT_SECRET:chirp-dev-jwt-secret-0123456789abcdef-please-change}
+    expiration-millis: 604800000
+
+logging:
+  level:
+    com.chirp.social: DEBUG

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ==================== chirp-gateway：API 网关（Spring Cloud Gateway + Nacos 发现） ==================== -->
+    <parent>
+        <groupId>com.chirp</groupId>
+        <artifactId>chirp-backend</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>chirp-gateway</artifactId>
+    <name>chirp-gateway</name>
+    <description>API 网关 — 统一入口、路由转发、跨域与限流</description>
+
+    <dependencies>
+        <!-- 内部公共模块：JwtService 等共享安全组件 -->
+        <dependency>
+            <groupId>com.chirp</groupId>
+            <artifactId>chirp-common</artifactId>
+        </dependency>
+        <!-- Spring Cloud Gateway（基于 WebFlux 的响应式网关，不可引入 spring-boot-starter-web） -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <!-- Redis 响应式客户端：网关鉴权过滤器经 ReactiveRedisTokenStore 校验 token（规范 D1） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
