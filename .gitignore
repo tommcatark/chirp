@@ -19,6 +19,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# IDE 导出的 HTML 分享包
+.trae-html-share-packages/
+
 # Java / Maven
 **/target/
 **/data/

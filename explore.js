@@ -48,8 +48,22 @@ function init() {
   bindSearch();
   bindTabs();
   bindFollowButtons();
+  bindAvatarClicks();
   loadTrends();
   loadLatest();
+}
+
+/* 头像点击 → 跳转用户主页 */
+function bindAvatarClicks() {
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-uid]");
+    if (!el) return;
+    if (e.target.closest("button, a, input, textarea, select, .follow-btn")) return;
+    const uid = Number(el.dataset.uid);
+    if (!uid) return;
+    e.stopPropagation();
+    location.href = `/profile.html?id=${uid}`;
+  }, true);
 }
 
 /* ============ 搜索 ============ */
@@ -181,7 +195,7 @@ function postCardHTML(p) {
   const [a, b] = avatarPair(p.userId);
   return `
   <article class="chirp" data-id="${p.id}">
-    <div class="avatar avatar-lg" style="--a:${a};--b:${b}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
+    <div class="avatar avatar-lg" data-uid="${p.userId}" style="--a:${a};--b:${b}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
     <div class="chirp-main">
       <p class="chirp-head">
         <strong>${escapeHTML(p.authorName)}</strong>
@@ -202,7 +216,7 @@ function userCardHTML(u) {
   const [a, b] = avatarPair(u.id);
   return `
   <li data-id="${u.id}">
-    <div class="avatar" style="--a:${a};--b:${b}">${escapeHTML((u.name || "?").charAt(0))}</div>
+    <div class="avatar" data-uid="${u.id}" style="--a:${a};--b:${b}">${escapeHTML((u.name || "?").charAt(0))}</div>
     <div class="suggest-meta">
       <strong>${escapeHTML(u.name)}</strong>
       <span>@${escapeHTML(u.handle)} · ${u.followerCount ?? 0} 位关注者</span>

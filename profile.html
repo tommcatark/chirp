@@ -26,7 +26,11 @@
         <p class="profile-bio" id="pf-bio">这个人还没有留下简介。</p>
         <p class="profile-joined" id="pf-joined"></p>
       </div>
-      <button type="button" class="edit-btn" id="edit-btn">编辑资料</button>
+      <div class="pf-actions" id="pf-actions">
+        <button type="button" class="edit-btn" id="edit-btn">编辑资料</button>
+        <button type="button" class="follow-btn hidden" id="pf-follow">关注</button>
+        <a class="msg-btn hidden" id="pf-message" href="#">发消息</a>
+      </div>
       <ul class="profile-stats">
         <li><strong id="st-posts">0</strong><span>鸣响</span></li>
         <li><strong id="st-following">0</strong><span>关注</span></li>
@@ -58,9 +62,9 @@
       </form>
     </section>
 
-    <!-- 我的帖子 -->
+    <!-- 帖子列表 -->
     <section class="profile-posts">
-      <h2>我的鸣响</h2>
+      <h2 id="posts-title">我的鸣响</h2>
       <p class="feed-loading" id="posts-loading">正在加载…</p>
       <div id="my-posts" class="feed"></div>
       <div class="empty-state hidden" id="posts-empty">

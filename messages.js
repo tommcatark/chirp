@@ -55,6 +55,7 @@ function init() {
   $("#chat-back").addEventListener("click", backToList);
   $("#chat-form").addEventListener("submit", onSend);
   $("#chat-more-btn").addEventListener("click", () => loadMessages(false));
+  bindAvatarClicks();
   const input = $("#chat-input");
   input.addEventListener("input", () => {
     $("#chat-send").disabled = !input.value.trim();
@@ -73,6 +74,19 @@ function init() {
   } else {
     loadConversations();
   }
+}
+
+/* 头像点击 → 跳转用户主页 */
+function bindAvatarClicks() {
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-uid]");
+    if (!el) return;
+    if (e.target.closest("button, a, input, textarea, select")) return;
+    const uid = Number(el.dataset.uid);
+    if (!uid) return;
+    e.stopPropagation();
+    location.href = `/profile.html?id=${uid}`;
+  }, true);
 }
 
 /* ============ 会话列表 ============ */
@@ -107,7 +121,7 @@ function convHTML(c) {
   return `
   <li class="conv-item ${c.unreadCount > 0 ? "is-unread" : ""}" data-id="${u.id}"
       data-name="${escapeHTML(u.name)}" data-handle="${escapeHTML(u.handle)}">
-    <div class="avatar" style="--a:${a};--b:${b}">${escapeHTML((u.name || "?").charAt(0))}</div>
+    <div class="avatar" data-uid="${u.id}" style="--a:${a};--b:${b}">${escapeHTML((u.name || "?").charAt(0))}</div>
     <div class="conv-body">
       <p class="conv-line">
         <strong>${escapeHTML(u.name)}</strong>
@@ -154,6 +168,7 @@ function openChat(user) {
   avatar.style.setProperty("--a", a);
   avatar.style.setProperty("--b", b);
   avatar.textContent = (user.name || "?").charAt(0);
+  avatar.dataset.uid = user.id;
   $("#chat-name").textContent = user.name;
   $("#chat-handle").textContent = `@${user.handle}`;
   $("#msg-list").innerHTML = "";

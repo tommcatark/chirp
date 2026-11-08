@@ -65,7 +65,21 @@ function init() {
   $("#mark-all-btn").addEventListener("click", markAllRead);
   $("#load-more-btn").addEventListener("click", () => loadNotifications(false));
   $("#notif-list").addEventListener("click", onItemClick);
+  bindAvatarClicks();
   loadNotifications(true);
+}
+
+/* 头像点击 → 跳转用户主页 */
+function bindAvatarClicks() {
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-uid]");
+    if (!el) return;
+    if (e.target.closest("button, a, input, textarea, select")) return;
+    const uid = Number(el.dataset.uid);
+    if (!uid) return;
+    e.stopPropagation();
+    location.href = `/profile.html?id=${uid}`;
+  }, true);
 }
 
 /* ============ 加载列表 ============ */
@@ -103,13 +117,15 @@ async function loadNotifications(reset) {
 
 function notifHTML(n) {
   const meta = TYPE_META[n.type] || { text: "与你互动了", icon: "" };
-  const [a, b] = avatarPair(n.actor?.id);
+  const actorId = n.actor?.id;
+  const [a, b] = avatarPair(actorId);
   const actorName = n.actor?.name || "未知用户";
   const quote = n.commentExcerpt || n.postExcerpt;
+  const uidAttr = actorId ? ` data-uid="${actorId}"` : "";
   return `
   <li class="notif-item ${n.isRead ? "" : "is-unread"}" data-id="${n.id}" data-read="${n.isRead}">
     <span class="notif-icon notif-icon-${escapeHTML(n.type)}">${meta.icon}</span>
-    <div class="avatar" style="--a:${a};--b:${b}">${escapeHTML(actorName.charAt(0))}</div>
+    <div class="avatar"${uidAttr} style="--a:${a};--b:${b}">${escapeHTML(actorName.charAt(0))}</div>
     <div class="notif-body">
       <p class="notif-line">
         <strong>${escapeHTML(actorName)}</strong>

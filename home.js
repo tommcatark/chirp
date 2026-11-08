@@ -103,9 +103,10 @@ function formatCount(n) {
   return n >= 10000 ? `${(n / 10000).toFixed(1)}w` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-function avatarHTML(seed, name, extraClass = "") {
+function avatarHTML(seed, name, extraClass = "", uid = null) {
   const [a, b] = colorsFor(seed);
-  return `<div class="avatar ${extraClass}" style="--a:${a};--b:${b}">${escapeHTML(initialOf(name))}</div>`;
+  const uidAttr = uid ? ` data-uid="${uid}"` : "";
+  return `<div class="avatar ${extraClass}"${uidAttr} style="--a:${a};--b:${b}">${escapeHTML(initialOf(name))}</div>`;
 }
 
 /* 将后端 PostResponse 归一化为前端渲染结构 */
@@ -121,6 +122,7 @@ function normalizePost(p) {
     comments: p.comments || 0,
     liked: !!p.liked,
     reposted: false,
+    bookmarked: !!p.bookmarked,
     mine: !!p.mine
   };
 }
@@ -139,6 +141,7 @@ function init() {
   $("#me-avatar").style.setProperty("--b", b);
   $("#composer-avatar").style.setProperty("--a", a);
   $("#composer-avatar").style.setProperty("--b", b);
+  if (me.id) $("#me-avatar").dataset.uid = me.id;
 
   renderTrends();
   bindEvents();
@@ -238,6 +241,32 @@ async function toggleLike(post, button) {
     post.likes += willLike ? -1 : 1;
     button.classList.toggle("on", post.liked);
     button.querySelector("span").textContent = formatCount(post.likes);
+  }
+}
+
+/* ============ 接口：收藏 ============ */
+async function toggleBookmark(post, button) {
+  const willBookmark = !post.bookmarked;
+  // 乐观更新 UI
+  post.bookmarked = willBookmark;
+  button.classList.toggle("on", willBookmark);
+  try {
+    const response = await fetch(`${API_BASE}/api/posts/${post.id}/bookmark`, {
+      method: willBookmark ? "POST" : "DELETE",
+      headers: authHeaders()
+    });
+    if (response.status === 401) { handleAuthExpired(); return; }
+    if (!response.ok) throw new Error();
+    // 以服务端返回的状态为准
+    const data = await response.json().catch(() => ({}));
+    if (typeof data.bookmarked === "boolean") {
+      post.bookmarked = data.bookmarked;
+      button.classList.toggle("on", data.bookmarked);
+    }
+  } catch {
+    // 失败回滚
+    post.bookmarked = !willBookmark;
+    button.classList.toggle("on", post.bookmarked);
   }
 }
 
@@ -404,7 +433,7 @@ async function removeComment(commentId) {
 function commentHTML(c) {
   return `
     <div class="comment" data-cid="${c.id}">
-      ${avatarHTML(c.userId, c.author.name, "avatar-sm")}
+      ${avatarHTML(c.userId, c.author.name, "avatar-sm", c.userId)}
       <div class="comment-main">
         <p class="comment-head">
           <strong>${escapeHTML(c.author.name)}</strong>
@@ -543,7 +572,7 @@ function visiblePosts() {
 function postHTML(post) {
   return `
     <article class="chirp" data-id="${post.id}">
-      ${avatarHTML(post.userId, post.author.name)}
+      ${avatarHTML(post.userId, post.author.name, "", post.userId)}
       <div class="chirp-main">
         <p class="chirp-head">
           <strong>${escapeHTML(post.author.name)}</strong>
@@ -570,6 +599,9 @@ function postHTML(post) {
           </button>
           <button type="button" class="action action-share" title="分享">
             <svg viewBox="0 0 24 24" width="17" height="17"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3M8 7l4-4 4 4" /></svg>
+          </button>
+          <button type="button" class="action action-bookmark ${post.bookmarked ? "on" : ""}" title="收藏">
+            <svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 3h12v18l-6-4-6 4Z" /></svg>
           </button>
         </div>
         <div class="comment-panel hidden">
@@ -635,7 +667,7 @@ async function loadTrends() {
 function renderSuggestions() {
   $("#suggest-list").innerHTML = suggestions.map((s) => `
     <li data-handle="${escapeHTML(s.handle)}">
-      ${avatarHTML(s.handle, s.name)}
+      ${avatarHTML(s.handle, s.name, "", s.id)}
       <div class="suggest-meta">
         <strong>${escapeHTML(s.name)}</strong>
         <span>@${escapeHTML(s.handle)}</span>
@@ -648,6 +680,17 @@ function renderSuggestions() {
 
 /* ============ 事件绑定 ============ */
 function bindEvents() {
+  // 头像点击 → 跳转用户主页（事件代理，capture 阶段避免被按钮吞掉）
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-uid]");
+    if (!el) return;
+    if (e.target.closest("button, a, input, textarea, select, .action, .post-delete, .comment-delete, .follow-btn, .bm-remove")) return;
+    const uid = Number(el.dataset.uid);
+    if (!uid) return;
+    e.stopPropagation();
+    location.href = `/profile.html?id=${uid}`;
+  }, true);
+
   const input = $("#composer-input");
   const counter = $("#char-count");
   const postBtn = $("#post-btn");
@@ -743,6 +786,8 @@ function bindEvents() {
       post.reposts += post.reposted ? 1 : -1;
       button.classList.toggle("on", post.reposted);
       count.textContent = formatCount(post.reposts);
+    } else if (button.classList.contains("action-bookmark")) {
+      toggleBookmark(post, button);
     }
   });
 
