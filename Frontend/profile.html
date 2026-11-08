@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人主页 · 鸣 Chirp</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230e9f6e'/%3E%3Crect x='5' y='10' width='3.4' height='8' rx='1.7' fill='white'/%3E%3Crect x='10.3' y='5.5' width='3.4' height='13' rx='1.7' fill='white'/%3E%3Crect x='15.6' y='9' width='3.4' height='9.5' rx='1.7' fill='white'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="profile-page">
+  <main class="profile-wrap">
+    <header class="profile-topbar">
+      <a class="brand-mark app-brand" href="/home.html" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#0e9f6e"/><rect x="5" y="10" width="3.4" height="8" rx="1.7" fill="#fff"/><rect x="10.3" y="5.5" width="3.4" height="13" rx="1.7" fill="#fff"/><rect x="15.6" y="9" width="3.4" height="9.5" rx="1.7" fill="#fff"/></svg>
+        <strong>鸣 Chirp</strong>
+      </a>
+      <a class="back-link" href="/home.html">← 返回首页</a>
+    </header>
+
+    <!-- 资料卡 -->
+    <section class="profile-card">
+      <div class="avatar avatar-xl" id="pf-avatar">我</div>
+      <div class="profile-info">
+        <h1 id="pf-name">—</h1>
+        <p class="profile-handle" id="pf-handle">@—</p>
+        <p class="profile-bio" id="pf-bio">这个人还没有留下简介。</p>
+        <p class="profile-joined" id="pf-joined"></p>
+      </div>
+      <button type="button" class="edit-btn" id="edit-btn">编辑资料</button>
+      <ul class="profile-stats">
+        <li><strong id="st-posts">0</strong><span>鸣响</span></li>
+        <li><strong id="st-following">0</strong><span>关注</span></li>
+        <li><strong id="st-followers">0</strong><span>粉丝</span></li>
+      </ul>
+    </section>
+
+    <!-- 编辑表单（默认收起） -->
+    <section class="edit-card hidden" id="edit-card">
+      <h2>编辑资料</h2>
+      <form id="edit-form" novalidate>
+        <label class="edit-field">
+          <span>昵称（2-120 字符）</span>
+          <input type="text" id="edit-name" maxlength="120" required />
+        </label>
+        <label class="edit-field">
+          <span>简介（最多 200 字符）</span>
+          <textarea id="edit-bio" maxlength="200" rows="3"></textarea>
+        </label>
+        <label class="edit-field">
+          <span>头像链接（可选）</span>
+          <input type="url" id="edit-avatar" maxlength="500" placeholder="https://…" />
+        </label>
+        <p class="edit-status" id="edit-status" role="status"></p>
+        <div class="edit-actions">
+          <button type="button" class="btn-ghost" id="edit-cancel">取消</button>
+          <button type="submit" class="btn-primary" id="edit-save" disabled>保存</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 我的帖子 -->
+    <section class="profile-posts">
+      <h2>我的鸣响</h2>
+      <p class="feed-loading" id="posts-loading">正在加载…</p>
+      <div id="my-posts" class="feed"></div>
+      <div class="empty-state hidden" id="posts-empty">
+        <h3>还没有发布过鸣响</h3>
+        <p>回到首页发布你的第一条吧。</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/profile.js"></script>
+</body>
+</html>

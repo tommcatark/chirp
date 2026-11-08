@@ -1,0 +1,28 @@
+﻿# Dependencies
+node_modules/
+
+# 后端已拆分为独立仓库（shirp-q-api）
+backend/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Java / Maven
+**/target/
+**/data/
+*.class
+*.jar
+*.war
+*.iml

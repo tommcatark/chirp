@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>话题 · 鸣 Chirp</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230e9f6e'/%3E%3Crect x='5' y='10' width='3.4' height='8' rx='1.7' fill='white'/%3E%3Crect x='10.3' y='5.5' width='3.4' height='13' rx='1.7' fill='white'/%3E%3Crect x='15.6' y='9' width='3.4' height='9.5' rx='1.7' fill='white'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="profile-page">
+  <main class="profile-wrap">
+    <header class="profile-topbar">
+      <a class="brand-mark app-brand" href="/home.html" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#0e9f6e"/><rect x="5" y="10" width="3.4" height="8" rx="1.7" fill="#fff"/><rect x="10.3" y="5.5" width="3.4" height="13" rx="1.7" fill="#fff"/><rect x="15.6" y="9" width="3.4" height="9.5" rx="1.7" fill="#fff"/></svg>
+        <strong>鸣 Chirp</strong>
+      </a>
+      <a class="back-link" href="/home.html">← 返回首页</a>
+    </header>
+
+    <!-- 话题头部 -->
+    <section class="profile-card topic-head">
+      <div class="topic-mark">#</div>
+      <div class="profile-info">
+        <h1 id="topic-name">话题</h1>
+        <p class="profile-handle" id="topic-count">—</p>
+      </div>
+    </section>
+
+    <!-- 话题下帖子 -->
+    <section class="profile-posts">
+      <p class="feed-loading" id="posts-loading">正在加载…</p>
+      <div id="topic-posts" class="feed"></div>
+      <div class="empty-state hidden" id="posts-empty">
+        <h3>这个话题下还没有鸣响</h3>
+        <p>发布一条带该话题的鸣响，就会成为第一条。</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/topic.js"></script>
+</body>
+</html>

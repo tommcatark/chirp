@@ -1,0 +1,22 @@
+# Build artifacts
+**/target/
+*.class
+*.jar
+*.war
+
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
