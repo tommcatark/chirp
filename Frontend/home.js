@@ -8,7 +8,7 @@ function clearAuthAndRedirect() {
   sessionStorage.removeItem("chirpUser");
   localStorage.removeItem("chirpToken");
   sessionStorage.removeItem("chirpToken");
-  window.location.replace("/");
+  window.location.replace("/index.html");
 }
 
 function loadCurrentUser() {
@@ -104,8 +104,7 @@ function formatCount(n) {
 }
 
 function avatarHTML(seed, name, extraClass = "") {
-  const [a, b] = colorsFor(seed);
-  return `<div class="avatar ${extraClass}" style="--a:${a};--b:${b}">${escapeHTML(initialOf(name))}</div>`;
+  return `<div class="avatar ${extraClass}" data-av="${hashSeed(seed) % AVATAR_PAIRS.length}">${escapeHTML(initialOf(name))}</div>`;
 }
 
 /* 将后端 PostResponse 归一化为前端渲染结构 */
@@ -593,13 +592,13 @@ function renderFeed(highlightId = null) {
   const emptyBox = $("#empty-following");
   if (activeTab === "following" && list.length === 0 && !keyword) {
     emptyBox.querySelector("h2").textContent = "关注流还是静的";
-    emptyBox.querySelector("p").textContent = "去右侧「你可能感兴趣的人」关注一些声音，这里就会热闹起来。";
+    emptyBox.querySelector("p").textContent = "去探索页关注一些声音，这里就会热闹起来。";
     emptyBox.classList.remove("hidden");
     feed.classList.add("hidden");
   } else if (noData) {
     // 数据库中还没有任何帖子：发一条即可打破空白
     emptyBox.querySelector("h2").textContent = "还没有任何鸣响";
-    emptyBox.querySelector("p").textContent = "在上方发布框写下你的第一声，让时间流动起来。";
+    emptyBox.querySelector("p").textContent = "点击「+」发布你的第一声，让时间流动起来。";
     emptyBox.classList.remove("hidden");
     feed.classList.add("hidden");
   } else {
@@ -669,7 +668,21 @@ function bindEvents() {
   input.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !postBtn.disabled) postBtn.click();
   });
-  $("#compose-cta").addEventListener("click", () => input.focus());
+  const composerModal = $("#composer-modal");
+  const closeComposer = () => composerModal.classList.add("hidden");
+  const openComposer = () => {
+    composerModal.classList.remove("hidden");
+    input.focus();
+  };
+
+  $("#compose-cta").addEventListener("click", openComposer);
+  $("#composer-close").addEventListener("click", closeComposer);
+  composerModal.addEventListener("click", (event) => {
+    if (event.target === composerModal) closeComposer();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !composerModal.classList.contains("hidden")) closeComposer();
+  });
   $("#retry-btn").addEventListener("click", loadFeed);
 
   postBtn.addEventListener("click", async () => {
@@ -685,6 +698,7 @@ function bindEvents() {
       if (!created) return; // 401 已触发跳转
       posts.unshift(created);
       input.value = "";
+      closeComposer();
       activeTab = "all";
       document.querySelectorAll(".feed-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === "all"));
       renderFeed(created.id);

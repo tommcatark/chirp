@@ -26,6 +26,12 @@ function avatarPair(seed) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_PAIRS[h % AVATAR_PAIRS.length];
 }
+function avatarVariant(seed) {
+  const s = String(seed ?? "?");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_PAIRS.length;
+}
 function applyAvatar(el, seed, letter) {
   const [a, b] = avatarPair(seed);
   el.style.setProperty("--a", a);
@@ -50,7 +56,7 @@ init();
 
 function init() {
   if (!loadToken() || !loadUser()) {
-    location.replace("/");
+    location.replace("/index.html");
     return;
   }
   bindEditForm();
@@ -74,7 +80,7 @@ function bindPostDelete() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${loadToken()}` }
       });
-      if (r.status === 401) { location.replace("/"); return; }
+      if (r.status === 401) { location.replace("/index.html"); return; }
       if (!r.ok && r.status !== 204) {
         btn.disabled = false;
         alert(r.status === 403 ? "只能删除自己的鸣响" : "删除失败，请稍后重试");
@@ -94,7 +100,7 @@ function bindPostDelete() {
 async function loadProfile() {
   try {
     const r = await fetch(`${API_BASE}/api/users/me`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return false; }
+    if (r.status === 401) { location.replace("/index.html"); return false; }
     if (!r.ok) throw new Error();
     profile = await r.json();
     renderProfile();
@@ -124,7 +130,7 @@ async function loadMyPosts() {
   $("#posts-loading").classList.remove("hidden");
   try {
     const r = await fetch(`${API_BASE}/api/users/${profile.id}/posts`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     const items = data.items || [];
@@ -132,7 +138,7 @@ async function loadMyPosts() {
     $("#posts-empty").classList.toggle("hidden", items.length > 0);
     $("#my-posts").innerHTML = items.map((p) => `
       <article class="chirp" data-id="${p.id}">
-        <div class="avatar avatar-lg" style="--a:${avatarPair(p.userId)[0]};--b:${avatarPair(p.userId)[1]}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
+        <div class="avatar avatar-lg" data-av="${avatarVariant(p.userId)}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
         <div class="chirp-main">
           <p class="chirp-head">
             <strong>${escapeHTML(p.authorName)}</strong>
@@ -191,7 +197,7 @@ function bindEditForm() {
         body: JSON.stringify({ name, bio, avatarUrl })
       });
       const data = await r.json().catch(() => ({}));
-      if (r.status === 401) { location.replace("/"); return; }
+      if (r.status === 401) { location.replace("/index.html"); return; }
       if (!r.ok) throw new Error(data.message || "保存失败，请稍后重试");
       profile = data;
       // 同步登录态缓存，首页用户卡片立即生效

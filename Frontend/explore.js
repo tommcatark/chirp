@@ -27,6 +27,12 @@ function avatarPair(seed) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_PAIRS[h % AVATAR_PAIRS.length];
 }
+function avatarVariant(seed) {
+  const s = String(seed ?? "?");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_PAIRS.length;
+}
 function timeAgo(ts) {
   const diff = Date.now() - ts;
   const m = Math.floor(diff / 60000);
@@ -104,7 +110,7 @@ async function runSearch() {
   $("#search-results").innerHTML = "";
   try {
     const r = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(searchKeyword)}&type=${searchType}&limit=30`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     const items = data.items || [];
@@ -139,7 +145,7 @@ async function loadLatest() {
   const loading = $("#posts-loading");
   try {
     const r = await fetch(`${API_BASE}/api/posts?scope=latest&limit=30`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     const items = data.items || [];
@@ -178,10 +184,10 @@ async function renderActiveAuthors(postItems) {
 
 /* ============ 卡片渲染 ============ */
 function postCardHTML(p) {
-  const [a, b] = avatarPair(p.userId);
+  const variant = avatarVariant(p.userId);
   return `
   <article class="chirp" data-id="${p.id}">
-    <div class="avatar avatar-lg" style="--a:${a};--b:${b}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
+    <div class="avatar avatar-lg" data-av="${variant}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
     <div class="chirp-main">
       <p class="chirp-head">
         <strong>${escapeHTML(p.authorName)}</strong>
@@ -199,10 +205,10 @@ function postCardHTML(p) {
 }
 
 function userCardHTML(u) {
-  const [a, b] = avatarPair(u.id);
+  const variant = avatarVariant(u.id);
   return `
   <li data-id="${u.id}">
-    <div class="avatar" style="--a:${a};--b:${b}">${escapeHTML((u.name || "?").charAt(0))}</div>
+    <div class="avatar" data-av="${variant}">${escapeHTML((u.name || "?").charAt(0))}</div>
     <div class="suggest-meta">
       <strong>${escapeHTML(u.name)}</strong>
       <span>@${escapeHTML(u.handle)} · ${u.followerCount ?? 0} 位关注者</span>
@@ -219,7 +225,7 @@ function bindFollowButtons() {
     if (!btn || btn.disabled) return;
     const userId = Number(btn.closest("[data-id]")?.dataset.id);
     if (!userId) return;
-    if (!loadToken()) { location.replace("/"); return; }
+    if (!loadToken()) { location.replace("/index.html"); return; }
 
     const following = btn.classList.contains("is-following");
     btn.disabled = true;
@@ -228,7 +234,7 @@ function bindFollowButtons() {
         method: following ? "DELETE" : "POST",
         headers: authHeaders()
       });
-      if (r.status === 401) { location.replace("/"); return; }
+      if (r.status === 401) { location.replace("/index.html"); return; }
       if (!r.ok) throw new Error();
       // 同步本页所有同一作者的按钮（推荐区与搜索区可能同时出现）
       document.querySelectorAll(`[data-id="${userId}"] .follow-btn`).forEach((b) => {
