@@ -11,12 +11,6 @@
   const enter = document.getElementById("enter-btn");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* 点击任意处跳过入场动画；CTA 自身由下面的处理器接管 */
-  document.addEventListener("click", (event) => {
-    if (enter && enter.contains(event.target)) return;
-    body.classList.add("is-settled");
-  }, { once: true, capture: true });
-
   if (!enter) return;
 
   enter.addEventListener("click", () => {

@@ -91,12 +91,23 @@ function colorsFor(seed) {
   return AVATAR_PAIRS[hashSeed(seed) % AVATAR_PAIRS.length];
 }
 
+function formatDate(ts) {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function timeAgo(ts) {
-  const diff = Date.now() - ts;
+  if (!Number.isFinite(ts)) return "";
+  const diff = Math.max(0, Date.now() - ts);
   if (diff < MIN) return "刚刚";
-  if (diff < HOUR) return `${Math.floor(diff / MIN)} 分钟`;
-  if (diff < 24 * HOUR) return `${Math.floor(diff / HOUR)} 小时`;
-  return `${Math.floor(diff / (24 * HOUR))} 天`;
+  if (diff < HOUR) return `${Math.floor(diff / MIN)} 分钟前`;
+  if (diff < 24 * HOUR) return `${Math.floor(diff / HOUR)} 小时前`;
+  if (diff < 7 * 24 * HOUR) return `${Math.floor(diff / (24 * HOUR))} 天前`;
+  return formatDate(ts);
 }
 
 function formatCount(n) {

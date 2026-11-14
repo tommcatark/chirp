@@ -9,8 +9,10 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/dream-theme.css" />
     <link rel="stylesheet" href="/layout-v2.css" />
+    <link rel="stylesheet" href="/starfield.css" />
   </head>
-  <body class="auth-body">
+  <body class="auth-body star-body">
+    <div class="starfield" id="starfield" aria-hidden="true"></div>
     <main class="auth-stage">
       <div class="auth-orbit" aria-hidden="true">
         <span class="orbit-glow"></span>
@@ -30,7 +32,6 @@
           </span>
           <span>鸣 <em>Chirp</em></span>
         </a>
-        <p class="sat-eyebrow">SPEAK · ECHO · RESONATE</p>
         <h1 class="sat-title">让每一个想法<br /><em>鸣响</em>世界。</h1>
         <p class="sat-copy">分享此刻、加入讨论，你的声音会在这里激起回响。</p>
       </aside>
@@ -61,12 +62,6 @@
             <p class="chirp-actions"><span>♡ 894</span><span>♺ 203</span><span>◎ 41</span></p>
           </div>
         </article>
-      </aside>
-
-      <aside class="auth-satellite sat-stat" aria-hidden="true">
-        <span class="sat-stat-kicker">此刻正在鸣响</span>
-        <strong>12.4k</strong>
-        <span class="sat-stat-unit">条声音 · 8,931 个话题</span>
       </aside>
 
       <section class="auth-center">
@@ -150,8 +145,13 @@
       <footer class="auth-foot">
         <span>© 2026 Chirp</span>
         <span>每一声，都有回响</span>
+        <button class="star-motion-toggle" id="star-motion-toggle" type="button" aria-pressed="true" title="关闭星空粒子动效">
+          <span class="star-motion-dot" aria-hidden="true">✦</span>
+          <span class="star-motion-label">动效 开</span>
+        </button>
       </footer>
     </main>
+    <script src="/starfield.js"></script>
     <script src="/crypto.js"></script>
     <script src="/app.js"></script>
   </body>
