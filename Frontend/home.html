@@ -72,7 +72,6 @@
       <main class="stage">
         <header class="signal-console">
           <div class="signal-title">
-            <p class="signal-kicker">YOUR ECHO FIELD</p>
             <h1>首页</h1>
           </div>
 
@@ -85,19 +84,14 @@
             <button class="feed-tab active" type="button" data-tab="all" role="tab" aria-selected="true">推荐</button>
             <button class="feed-tab" type="button" data-tab="following" role="tab" aria-selected="false">关注</button>
           </div>
-
-          <div class="console-live" aria-hidden="true">
-            <span class="live-dot"></span>
-            <span>此刻有回响</span>
-          </div>
         </header>
 
-        <!-- 信号带：趋势 / 推荐 / 统计 -->
+        <!-- 信号带：趋势 / 推荐 -->
         <section class="signal-band">
           <section class="side-card signal-card signal-trends">
             <div class="signal-card-head">
               <h3>正在鸣响</h3>
-              <a class="side-more" href="/explore.html">查看全部 →</a>
+              <a class="side-more" href="/explore.html">查看全部</a>
             </div>
             <ul class="trend-list" id="trend-list"></ul>
           </section>
@@ -108,12 +102,6 @@
             </div>
             <ul class="suggest-list" id="suggest-list"></ul>
           </section>
-
-          <section class="side-card signal-card signal-stat" aria-hidden="true">
-            <span class="signal-stat-kicker">今日回声</span>
-            <strong>12,406</strong>
-            <span class="signal-stat-unit">次鸣响 · 正在发生</span>
-          </section>
         </section>
 
         <!-- 信息流舞台 -->
@@ -123,7 +111,6 @@
               <span class="live-dot" aria-hidden="true"></span>
               <span>时间流</span>
             </div>
-            <span class="feed-stage-note">每一张卡片，都是一次回响</span>
           </header>
 
           <p class="feed-loading" id="feed-loading">正在加载时间流…</p>
@@ -161,7 +148,6 @@
       <section class="composer-sheet" role="dialog" aria-modal="true" aria-labelledby="composer-title">
         <header class="composer-sheet-head">
           <div>
-            <p class="signal-kicker">NEW ECHO</p>
             <h2 id="composer-title">发布新声</h2>
           </div>
           <button class="composer-close" id="composer-close" type="button" aria-label="关闭发布框">×</button>

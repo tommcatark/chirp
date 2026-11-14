@@ -1,0 +1,441 @@
+/* =========================================================================
+   星空粒子背景 · 仅用于 welcome.html 与 index.html
+   分层星空：远景/中景/近景漂移 + 闪烁 + 流星 + 鼠标视差。
+   动效由页脚「动效」按钮控制；关闭时保留静态星空。
+   ========================================================================= */
+
+body.star-body {
+  background: transparent;
+}
+
+.welcome-body {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* 深空底色：取消极光漂移与磨砂噪点，换成清晰星空 */
+body.star-body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 44%, rgba(2, 3, 10, 0.6) 100%),
+    linear-gradient(112deg, transparent 32%, rgba(124, 92, 255, 0.07) 44%, rgba(111, 227, 255, 0.035) 52%, transparent 66%),
+    radial-gradient(ellipse 80% 60% at 50% 118%, rgba(62, 39, 132, 0.3), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 8% 4%, rgba(30, 46, 110, 0.38), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 96% 30%, rgba(86, 42, 120, 0.18), transparent 70%),
+    linear-gradient(180deg, #02030a 0%, #050615 42%, #090721 100%);
+  animation: deepSpaceShift 80s ease-in-out infinite alternate;
+}
+
+/* 静态星层：用多层 radial-gradient 铺出密集星点，替代原来的噪点 */
+body.star-body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 1;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%, rgba(255, 255, 255, 0.95), transparent 100%),
+    radial-gradient(2px 2px at 74% 28%, rgba(111, 227, 255, 0.9), transparent 100%),
+    radial-gradient(1.5px 1.5px at 38% 64%, rgba(255, 255, 255, 0.8), transparent 100%),
+    radial-gradient(2.4px 2.4px at 86% 82%, rgba(255, 122, 198, 0.85), transparent 100%),
+    radial-gradient(1.4px 1.4px at 56% 42%, rgba(255, 255, 255, 0.7), transparent 100%),
+    radial-gradient(1.8px 1.8px at 22% 88%, rgba(169, 150, 255, 0.9), transparent 100%),
+    radial-gradient(1.5px 1.5px at 92% 12%, rgba(255, 255, 255, 0.85), transparent 100%),
+    radial-gradient(1.4px 1.4px at 66% 74%, rgba(255, 255, 255, 0.65), transparent 100%),
+    radial-gradient(2.2px 2.2px at 46% 8%, rgba(111, 227, 255, 0.75), transparent 100%),
+    radial-gradient(1.4px 1.4px at 8% 52%, rgba(255, 255, 255, 0.6), transparent 100%),
+    radial-gradient(1.6px 1.6px at 78% 56%, rgba(255, 255, 255, 0.75), transparent 100%),
+    radial-gradient(2.6px 2.6px at 32% 32%, rgba(255, 255, 255, 0.9), transparent 100%),
+    radial-gradient(1.4px 1.4px at 54% 92%, rgba(255, 255, 255, 0.55), transparent 100%),
+    radial-gradient(1.9px 1.9px at 4% 76%, rgba(111, 227, 255, 0.7), transparent 100%),
+    radial-gradient(1.5px 1.5px at 28% 6%, rgba(255, 255, 255, 0.7), transparent 100%),
+    radial-gradient(2.1px 2.1px at 96% 58%, rgba(255, 255, 255, 0.8), transparent 100%);
+  background-size:
+    340px 340px, 460px 460px, 420px 420px, 560px 560px, 320px 320px,
+    620px 620px, 440px 440px, 380px 380px, 700px 700px, 300px 300px,
+    520px 520px, 640px 640px, 480px 480px, 580px 580px, 500px 500px,
+    680px 680px;
+  background-repeat: repeat;
+  animation: starfieldDrift 120s linear infinite;
+}
+
+@keyframes deepSpaceShift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-1.2%, 1%, 0) scale(1.06); }
+}
+
+@keyframes starfieldDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-3%, 2%, 0); }
+}
+
+/* 动态粒子层：由 starfield.js 生成 */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.star-parallax {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.star-layer {
+  position: absolute;
+  inset: -16%;
+  animation: starLayerDrift var(--dur, 60s) ease-in-out var(--delay, 0s) infinite alternate;
+  will-change: transform;
+}
+
+.star-layer-far { --dur: 92s; }
+.star-layer-mid { --dur: 58s; }
+.star-layer-near { --dur: 34s; }
+
+@keyframes starLayerDrift {
+  from { transform: translate3d(-2.8%, -1.6%, 0) scale(1.03) rotate(-0.35deg); }
+  to { transform: translate3d(3.6%, 2.6%, 0) scale(1.09) rotate(0.55deg); }
+}
+
+.star-particle {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  width: var(--size, 1.5px);
+  height: var(--size, 1.5px);
+  border-radius: 50%;
+  background: #fff;
+  animation: starTwinkle var(--tw, 5s) ease-in-out var(--delay, 0s) infinite alternate;
+  will-change: transform, opacity;
+}
+
+.star-layer-far .star-particle {
+  opacity: 0.42;
+  box-shadow: 0 0 calc(var(--size, 1.5px) * 2) rgba(255, 255, 255, 0.35);
+}
+
+.star-layer-mid .star-particle {
+  opacity: 0.68;
+  box-shadow: 0 0 calc(var(--size, 1.5px) * 3) rgba(255, 255, 255, 0.5);
+}
+
+.star-layer-near .star-particle {
+  opacity: 0.92;
+  box-shadow: 0 0 calc(var(--size, 1.5px) * 4) rgba(255, 255, 255, 0.65);
+}
+
+.star-particle.is-blue {
+  background: #dff8ff;
+  box-shadow: 0 0 calc(var(--size, 1.5px) * 4) rgba(111, 227, 255, 0.75);
+}
+
+.star-particle.is-pink {
+  background: #ffe4f6;
+  box-shadow: 0 0 calc(var(--size, 1.5px) * 4) rgba(255, 122, 198, 0.7);
+}
+
+.star-particle.is-bright {
+  box-shadow: 0 0 5px #fff, 0 0 18px rgba(111, 227, 255, 0.8);
+}
+
+.star-particle.is-bright::before,
+.star-particle.is-bright::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  transform: translate(-50%, -50%);
+}
+
+.star-particle.is-bright::before {
+  width: 13px;
+  height: 1px;
+}
+
+.star-particle.is-bright::after {
+  width: 1px;
+  height: 13px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+
+@keyframes starTwinkle {
+  from { opacity: 0.16; scale: 0.7; }
+  to { opacity: 1; scale: 1.22; }
+}
+
+/* 少量流星，低存在感 */
+.shooting-star {
+  position: absolute;
+  left: var(--x, 20%);
+  top: var(--y, 10%);
+  width: 160px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), rgba(111, 227, 255, 0.6), transparent);
+  transform: rotate(135deg);
+  opacity: 0;
+  filter: drop-shadow(0 0 7px rgba(111, 227, 255, 0.55));
+  animation: shootingStar var(--sd, 10s) linear var(--delay, 3s) infinite;
+}
+
+.shooting-star::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -1.5px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 9px #fff, 0 0 18px rgba(111, 227, 255, 0.8);
+}
+
+@keyframes shootingStar {
+  0%, 86% { opacity: 0; transform: translate3d(0, 0, 0) rotate(135deg) scaleX(0.2); }
+  87% { opacity: 0; }
+  88% { opacity: 0.95; }
+  95% { opacity: 0; transform: translate3d(430px, 430px, 0) rotate(135deg) scaleX(1); }
+  100% { opacity: 0; transform: translate3d(430px, 430px, 0) rotate(135deg) scaleX(1); }
+}
+
+.starfield.is-paused .star-layer,
+.starfield.is-paused .star-particle,
+.starfield.is-paused .shooting-star {
+  animation-play-state: paused;
+}
+
+body.star-motion-paused::before,
+body.star-motion-paused::after {
+  animation-play-state: paused;
+}
+
+/* 页脚动效开关 */
+.star-motion-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: rgba(237, 233, 255, 0.035);
+  color: var(--text-low);
+  font: inherit;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: color 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease);
+}
+
+.star-motion-toggle:hover {
+  color: var(--text-hi);
+  border-color: var(--stroke-2);
+  background: rgba(237, 233, 255, 0.07);
+}
+
+.star-motion-dot {
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(111, 227, 255, 0.7);
+}
+
+.star-motion-toggle[aria-pressed="false"] .star-motion-dot {
+  color: var(--text-low);
+  text-shadow: none;
+}
+
+/* 关闭动效：保留星空，停止所有星空相关动画 */
+body.star-motion-off::before,
+body.star-motion-off::after,
+body.star-motion-off .star-layer,
+body.star-motion-off .star-particle,
+body.star-motion-off .shooting-star {
+  animation: none !important;
+}
+
+body.star-motion-off .shooting-star {
+  display: none;
+}
+
+body.star-motion-off .star-particle {
+  opacity: 0.68;
+}
+
+/* welcome 主标题：统一渐变 + 描边 + 错位回声字 + 流光 */
+.welcome-title-wrap {
+  --title-size: clamp(48px, min(9vw, 12vh), 112px);
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+
+.star-body .welcome-title,
+.star-body .welcome-title-echo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--title-size, clamp(52px, 9vw, 112px));
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: 0.035em;
+  text-align: center;
+}
+
+.star-body .welcome-title {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 22px;
+  background: linear-gradient(105deg, #ffffff 0%, #f4efff 28%, #d9ccff 52%, #ffd0ec 76%, #c9f5ff 100%);
+  background-size: 160% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.12);
+  filter: drop-shadow(0 12px 42px rgba(124, 92, 255, 0.28));
+  animation: welcomeShimmer 12s ease-in-out infinite;
+}
+
+.star-body .welcome-title em,
+.star-body .welcome-title-echo em {
+  font-style: normal;
+}
+
+.star-body .welcome-title em {
+  background: linear-gradient(105deg, #ffffff 0%, #f4efff 28%, #d9ccff 52%, #ffd0ec 76%, #c9f5ff 100%);
+  background-size: 160% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.welcome-title-echo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px rgba(111, 227, 255, 0.35);
+  transform: translate(10px, 10px) scale(1.008);
+  filter: blur(0.4px);
+  opacity: 0.7;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@keyframes welcomeShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@media (max-width: 600px) {
+  .welcome-title-wrap {
+    --title-size: clamp(40px, min(11vw, 12vh), 64px);
+  }
+
+  .welcome-title-echo {
+    transform: translate(5px, 5px) scale(1.005);
+    opacity: 0.55;
+  }
+}
+
+@media (max-height: 720px) {
+  .welcome-stage {
+    padding-top: 96px;
+    padding-bottom: 82px;
+  }
+
+  .welcome-sub {
+    margin-bottom: 26px;
+  }
+
+  .welcome-enter {
+    height: 52px;
+  }
+
+  .welcome-rule {
+    margin-bottom: 16px;
+  }
+}
+
+.welcome-rule {
+  position: relative;
+  display: block;
+  width: min(180px, 42vw);
+  height: 1px;
+  margin: 0 auto 22px;
+  background: linear-gradient(90deg, transparent, rgba(111, 227, 255, 0.55), rgba(255, 122, 198, 0.55), transparent);
+  box-shadow: 0 0 14px rgba(111, 227, 255, 0.28);
+}
+
+.welcome-rule::after {
+  content: "✦";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #e9f9ff;
+  font-size: 12px;
+  line-height: 1;
+  text-shadow: 0 0 14px rgba(111, 227, 255, 0.95);
+}
+
+/* 保留回声环作为结构，不再持续旋转/呼吸 */
+.star-body .echo-ring,
+.star-body .echo-core {
+  animation: none !important;
+}
+
+.star-body .ring-3 {
+  display: none;
+}
+
+/* 页脚动效开关必须高于舞台内容，确保可点击 */
+.welcome-body .welcome-foot {
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.welcome-body .star-motion-toggle {
+  position: relative;
+  z-index: 13;
+  pointer-events: auto;
+}
+
+/* 系统开启「减少动态效果」时，dream-theme.css 会全局压缩动画；
+   这里只为星空层恢复动画，页面其它 UI 仍遵循系统降级。
+   用户可通过页脚「动效」按钮关闭。 */
+@media (prefers-reduced-motion: reduce) {
+  body.star-body:not(.star-motion-off)::before {
+    animation: deepSpaceShift 80s ease-in-out infinite alternate !important;
+  }
+
+  body.star-body:not(.star-motion-off)::after {
+    animation: starfieldDrift 120s linear infinite !important;
+  }
+
+  body.star-body:not(.star-motion-off) .star-layer {
+    animation-duration: var(--dur, 60s) !important;
+    animation-delay: var(--delay, 0s) !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  body.star-body:not(.star-motion-off) .star-particle {
+    animation-duration: var(--tw, 5s) !important;
+    animation-delay: var(--delay, 0s) !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  body.star-body:not(.star-motion-off) .shooting-star {
+    animation-duration: var(--sd, 10s) !important;
+    animation-delay: var(--delay, 3s) !important;
+    animation-iteration-count: infinite !important;
+  }
+}
