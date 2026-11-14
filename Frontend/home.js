@@ -130,6 +130,7 @@ function normalizePost(p) {
     reposts: p.reposts || 0,
     comments: p.comments || 0,
     liked: !!p.liked,
+    bookmarked: !!p.bookmarked,
     reposted: false,
     mine: !!p.mine
   };
@@ -248,6 +249,30 @@ async function toggleLike(post, button) {
     post.likes += willLike ? -1 : 1;
     button.classList.toggle("on", post.liked);
     button.querySelector("span").textContent = formatCount(post.likes);
+  }
+}
+
+/* ============ 接口：收藏（POST/DELETE /api/posts/{id}/bookmark） ============ */
+async function toggleBookmark(post, button) {
+  const willBookmark = !post.bookmarked;
+  // 乐观更新 UI
+  post.bookmarked = willBookmark;
+  button.classList.toggle("on", willBookmark);
+  try {
+    const response = await fetch(`${API_BASE}/api/posts/${post.id}/bookmark`, {
+      method: willBookmark ? "POST" : "DELETE",
+      headers: authHeaders()
+    });
+    if (response.status === 401) { handleAuthExpired(); return; }
+    if (!response.ok) throw new Error();
+    // 以服务端状态为准
+    const data = await response.json();
+    post.bookmarked = !!data.bookmarked;
+    button.classList.toggle("on", post.bookmarked);
+  } catch {
+    // 失败回滚
+    post.bookmarked = !willBookmark;
+    button.classList.toggle("on", post.bookmarked);
   }
 }
 
@@ -581,6 +606,9 @@ function postHTML(post) {
           <button type="button" class="action action-share" title="分享">
             <svg viewBox="0 0 24 24" width="17" height="17"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3M8 7l4-4 4 4" /></svg>
           </button>
+          <button type="button" class="action action-bookmark ${post.bookmarked ? "on" : ""}" title="收藏">
+            <svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 3h12v18l-6-4-6 4Z" /></svg>
+          </button>
         </div>
         <div class="comment-panel hidden">
           <div class="comment-list"></div>
@@ -763,6 +791,8 @@ function bindEvents() {
       toggleCommentPanel(chirp, post);
     } else if (button.classList.contains("action-like")) {
       toggleLike(post, button);
+    } else if (button.classList.contains("action-bookmark")) {
+      toggleBookmark(post, button);
     } else if (button.classList.contains("action-repost")) {
       post.reposted = !post.reposted;
       post.reposts += post.reposted ? 1 : -1;
