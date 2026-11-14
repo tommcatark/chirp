@@ -2333,3 +2333,61 @@ body.is-leaving .welcome-foot {
 .lite-motion .chirp:hover {
   transform: none;
 }
+
+/* ---------- 收藏：操作按钮与收藏页 ---------- */
+.action-bookmark:hover,
+.action-bookmark.on {
+  color: var(--violet-soft);
+  background: rgba(124, 92, 255, 0.14);
+}
+
+.action-bookmark.on svg path {
+  fill: currentColor;
+}
+
+.bm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 0;
+}
+
+.bm-head h1 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.bm-count {
+  font-size: 12.5px;
+  color: var(--text-low);
+}
+
+.bm-list {
+  margin-top: 8px;
+}
+
+.bm-item {
+  transition: opacity 240ms var(--ease), transform 240ms var(--ease);
+}
+
+.bm-item.is-removing {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.bm-load-more {
+  display: block;
+  margin: 14px auto 0;
+  padding: 9px 22px;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-mid);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.bm-load-more:hover {
+  color: var(--text-hi);
+  border-color: var(--violet);
+}
