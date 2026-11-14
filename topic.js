@@ -23,6 +23,12 @@ function avatarPair(seed) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_PAIRS[h % AVATAR_PAIRS.length];
 }
+function avatarVariant(seed) {
+  const s = String(seed ?? "?");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_PAIRS.length;
+}
 function timeAgo(ts) {
   const diff = Date.now() - ts;
   const m = Math.floor(diff / 60000);
@@ -53,7 +59,7 @@ function init() {
 async function loadTopicPosts() {
   try {
     const r = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(tag)}&type=post&limit=50`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     // 精确过滤：内容中确实包含该话题标记（#tag# 或 #tag 至空白/结尾）
@@ -63,10 +69,10 @@ async function loadTopicPosts() {
     $("#topic-count").textContent = `${items.length} 条鸣响`;
     $("#posts-empty").classList.toggle("hidden", items.length > 0);
     $("#topic-posts").innerHTML = items.map((p) => {
-      const [a, b] = avatarPair(p.userId);
+      const variant = avatarVariant(p.userId);
       return `
       <article class="chirp">
-        <div class="avatar avatar-lg" style="--a:${a};--b:${b}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
+        <div class="avatar avatar-lg" data-av="${variant}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
         <div class="chirp-main">
           <p class="chirp-head">
             <strong>${escapeHTML(p.authorName)}</strong>
