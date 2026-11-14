@@ -338,10 +338,8 @@
   gap: 7px;
   border: 1px solid var(--stroke);
   border-radius: 30px;
-  background: linear-gradient(180deg, rgba(237, 233, 255, 0.075), rgba(237, 233, 255, 0.022));
+  background: linear-gradient(180deg, rgba(22, 16, 48, 0.82), rgba(10, 9, 28, 0.7));
   box-shadow: var(--shadow-1);
-  -webkit-backdrop-filter: blur(22px) saturate(155%);
-  backdrop-filter: blur(22px) saturate(155%);
   z-index: 40;
 }
 
@@ -356,13 +354,106 @@
 }
 
 .observatory .nav-list {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   align-items: center;
   gap: 6px;
+  touch-action: none;
+  user-select: none;
+}
+
+/* 液态玻璃滑块：位置与尺寸由 nav-liquid.js 写入 */
+.observatory .nav-liquid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  width: var(--liquid-w, 56px);
+  height: var(--liquid-h, 52px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.5), rgba(255, 122, 198, 0.24) 52%, rgba(111, 227, 255, 0.2));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -10px 22px rgba(124, 92, 255, 0.18),
+    0 12px 32px rgba(124, 92, 255, 0.24);
+  -webkit-backdrop-filter: blur(18px) saturate(165%);
+  backdrop-filter: blur(18px) saturate(165%);
+  transform: translate3d(var(--liquid-x, 0px), var(--liquid-y, 0px), 0);
+  transition:
+    transform var(--liquid-dur, 340ms) var(--ease),
+    width var(--liquid-dur, 340ms) var(--ease),
+    height var(--liquid-dur, 340ms) var(--ease),
+    opacity 220ms var(--ease);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, width, height;
+}
+
+.observatory .nav-list.is-ready .nav-liquid {
+  opacity: 1;
+}
+
+.observatory .nav-list.is-dragging .nav-liquid {
+  --liquid-dur: 120ms;
+}
+
+.observatory .nav-liquid::before {
+  content: "";
+  position: absolute;
+  inset: -34%;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.42), transparent 42%),
+    radial-gradient(circle at 72% 78%, rgba(111, 227, 255, 0.3), transparent 52%),
+    radial-gradient(circle at 55% 50%, rgba(255, 122, 198, 0.22), transparent 60%);
+  filter: blur(10px);
+  opacity: 0.9;
+  animation: navLiquidFlow 7s ease-in-out infinite;
+}
+
+.observatory .nav-liquid::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 3px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  opacity: 0.8;
+}
+
+@keyframes navLiquidFlow {
+  0%, 100% {
+    transform: translate3d(-4%, -2%, 0) scale(1);
+    border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
+  }
+  50% {
+    transform: translate3d(4%, 3%, 0) scale(1.12);
+    border-radius: 55% 45% 40% 60% / 45% 55% 45% 55%;
+  }
+}
+
+/* 系统 reduce 下仍保留滑块跟随，这是操作反馈；内部流体动画继续降级 */
+@media (prefers-reduced-motion: reduce) {
+  .observatory .nav-liquid {
+    transition:
+      transform var(--liquid-dur, 340ms) var(--ease),
+      width var(--liquid-dur, 340ms) var(--ease),
+      height var(--liquid-dur, 340ms) var(--ease),
+      opacity 220ms var(--ease) !important;
+  }
+}
+
+/* 使用共享滑块后，隐藏旧的单项选中底色 */
+.observatory .nav-list.has-liquid .nav-item::before {
+  opacity: 0 !important;
 }
 
 .observatory .nav-item {
   position: relative;
+  z-index: 1;
   isolation: isolate;
   width: 56px;
   height: 52px;
@@ -370,6 +461,7 @@
   justify-content: center;
   gap: 0;
   border-radius: 18px;
+  -webkit-user-drag: none;
 }
 
 .observatory .nav-item > span {
@@ -417,22 +509,6 @@
 .observatory .nav-item.active::before {
   opacity: 1;
   transform: scale(1);
-}
-
-.observatory .nav-item::after {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  z-index: -1;
-  border-radius: 18px;
-  background: linear-gradient(110deg, transparent 24%, rgba(255, 255, 255, 0.26) 50%, transparent 76%);
-  transform: translateX(-130%);
-  transition: transform 620ms var(--ease);
-  pointer-events: none;
-}
-
-.observatory .nav-item:hover::after {
-  transform: translateX(130%);
 }
 
 .observatory .nav-badge {
@@ -511,6 +587,25 @@
   flex-direction: column;
   gap: 18px;
   padding-bottom: 24px;
+}
+
+.observatory .view-panel {
+  min-width: 0;
+}
+
+.observatory #view-home {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.observatory #view-profile {
+  display: block;
+}
+
+.observatory .embedded-profile {
+  margin: 0 auto;
 }
 
 /* 顶部控制台 */
@@ -640,16 +735,21 @@
   background: rgba(237, 233, 255, 0.04);
 }
 
-/* 信号带：趋势 / 人 / 统计 */
+/* 信号带：两张等宽、等高、顶部对齐的卡片 */
 .signal-band {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.95fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .signal-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 232px;
   padding: 16px 18px;
+  overflow: hidden;
   border: 1px solid var(--stroke);
   border-radius: 24px;
   background: linear-gradient(155deg, rgba(237, 233, 255, 0.058), rgba(237, 233, 255, 0.018));
@@ -658,15 +758,13 @@
   backdrop-filter: blur(16px) saturate(145%);
 }
 
-.signal-card:nth-child(2) {
-  margin-top: 14px;
-}
-
+.signal-card:nth-child(2),
 .signal-card:nth-child(3) {
-  margin-top: 5px;
+  margin-top: 0;
 }
 
 .signal-card-head {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -690,9 +788,17 @@
 }
 
 .signal-trends .trend-list {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 7px;
+  padding-right: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(169, 150, 255, 0.42) transparent;
 }
 
 .signal-trends .trend-list a {
@@ -721,9 +827,32 @@
 }
 
 .signal-people .suggest-list {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding-right: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(169, 150, 255, 0.42) transparent;
+}
+
+.signal-card .trend-list::-webkit-scrollbar,
+.signal-card .suggest-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.signal-card .trend-list::-webkit-scrollbar-thumb,
+.signal-card .suggest-list::-webkit-scrollbar-thumb {
+  background: rgba(169, 150, 255, 0.38);
+  border-radius: 999px;
+}
+
+.signal-card .trend-list::-webkit-scrollbar-track,
+.signal-card .suggest-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .signal-people .suggest-list li {
@@ -770,24 +899,13 @@
 .feed-stage {
   position: relative;
   flex: 1;
-  padding: 18px 20px 26px 64px;
+  padding: 18px 20px 24px;
   border: 1px solid var(--stroke);
   border-radius: 30px;
   background: linear-gradient(180deg, rgba(11, 9, 30, 0.72), rgba(11, 9, 30, 0.52));
   box-shadow: var(--shadow-1);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
   backdrop-filter: blur(22px) saturate(150%);
-}
-
-.feed-stage::before {
-  content: "";
-  position: absolute;
-  left: 32px;
-  top: 72px;
-  bottom: 42px;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(169, 150, 255, 0.42), rgba(255, 122, 198, 0.2), transparent);
-  pointer-events: none;
 }
 
 .feed-stage-head {
@@ -817,14 +935,12 @@
 .observatory .feed {
   position: relative;
   display: grid;
-  gap: 14px;
+  gap: 12px;
   padding: 0;
-  counter-reset: chirp;
 }
 
 .observatory #feed .chirp {
-  counter-increment: chirp;
-  padding: 17px 18px 15px;
+  padding: 15px 16px 14px;
   border-radius: 24px 24px 24px 10px;
   border: 1px solid var(--stroke);
   border-left: 1px solid color-mix(in srgb, var(--accent, var(--violet)) 38%, transparent);
@@ -835,19 +951,6 @@
 .observatory #feed .chirp:nth-child(3n + 1) { --accent: var(--violet); }
 .observatory #feed .chirp:nth-child(3n + 2) { --accent: var(--pink); }
 .observatory #feed .chirp:nth-child(3n) { --accent: var(--cyan); }
-
-.observatory #feed .chirp::before {
-  content: counter(chirp, decimal-leading-zero);
-  position: absolute;
-  left: -48px;
-  top: 19px;
-  color: var(--text-low);
-  font-family: var(--font-ui);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  opacity: 0.62;
-}
 
 .observatory #feed .chirp:hover {
   border-color: rgba(169, 150, 255, 0.34);
@@ -1041,7 +1144,7 @@
   }
 
   .signal-band {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .signal-stat {
@@ -1127,15 +1230,7 @@
   }
 
   .feed-stage {
-    padding-left: 48px;
-  }
-
-  .feed-stage::before {
-    left: 24px;
-  }
-
-  .observatory #feed .chirp::before {
-    left: -38px;
+    padding-left: 16px;
   }
 }
 
@@ -1161,24 +1256,14 @@
     height: 48px;
   }
 
+  .feed-stage {
+    padding: 14px 14px 22px;
+  }
+}
+
+@media (max-width: 720px) {
   .signal-band {
     grid-template-columns: 1fr;
-  }
-
-  .signal-card:nth-child(2) {
-    margin-top: 0;
-  }
-
-  .feed-stage {
-    padding: 14px 14px 22px 44px;
-  }
-
-  .feed-stage::before {
-    left: 20px;
-  }
-
-  .observatory #feed .chirp::before {
-    left: -34px;
   }
 }
 
@@ -1324,6 +1409,7 @@
   }
 
   .signal-card {
+    height: 210px;
     border-radius: 20px;
     padding: 14px 15px;
   }
@@ -1331,11 +1417,6 @@
   .feed-stage {
     border-radius: 22px;
     padding: 14px 10px 20px;
-  }
-
-  .feed-stage::before,
-  .observatory #feed .chirp::before {
-    display: none;
   }
 
   .feed-stage-head {

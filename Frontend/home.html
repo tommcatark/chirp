@@ -26,7 +26,8 @@
         </a>
 
         <nav class="nav-list" aria-label="主导航">
-          <a class="nav-item active" href="/home.html">
+          <span class="nav-liquid" id="nav-liquid" aria-hidden="true"></span>
+          <a class="nav-item active" href="/home.html" data-view="home" aria-current="page">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5" /></svg>
             <span>首页</span>
           </a>
@@ -48,7 +49,7 @@
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4Z" /></svg>
             <span>收藏</span>
           </a>
-          <a class="nav-item" href="/profile.html">
+          <a class="nav-item" href="/profile.html" data-view="profile">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" /></svg>
             <span>个人主页</span>
           </a>
@@ -70,6 +71,7 @@
 
       <!-- ============ 观测台主舞台 ============ -->
       <main class="stage">
+        <div class="view-panel view-home" id="view-home">
         <header class="signal-console">
           <div class="signal-title">
             <h1>首页</h1>
@@ -104,15 +106,8 @@
           </section>
         </section>
 
-        <!-- 信息流舞台 -->
+        <!-- 信息流 -->
         <section class="feed-stage">
-          <header class="feed-stage-head">
-            <div class="feed-stage-title">
-              <span class="live-dot" aria-hidden="true"></span>
-              <span>时间流</span>
-            </div>
-          </header>
-
           <p class="feed-loading" id="feed-loading">正在加载时间流…</p>
 
           <section class="feed" id="feed" aria-label="时间流"></section>
@@ -140,6 +135,62 @@
           </div>
           <span>© 2026 Chirp · 每一声，都有回响</span>
         </footer>
+        </div>
+
+        <!-- ============ 内嵌个人主页 ============ -->
+        <section class="view-panel view-profile hidden" id="view-profile" aria-label="个人主页">
+          <div class="profile-wrap embedded-profile">
+            <section class="profile-card">
+              <div class="profile-cover" aria-hidden="true"></div>
+              <div class="avatar avatar-xl" id="pf-avatar">我</div>
+              <div class="profile-info">
+                <h1 id="pf-name">—</h1>
+                <p class="profile-handle" id="pf-handle">@—</p>
+                <p class="profile-bio" id="pf-bio">这个人还没有留下简介。</p>
+                <p class="profile-joined" id="pf-joined"></p>
+              </div>
+              <button type="button" class="edit-btn" id="edit-btn">编辑资料</button>
+              <ul class="profile-stats">
+                <li><strong id="st-posts">0</strong><span>鸣响</span></li>
+                <li><strong id="st-following">0</strong><span>关注</span></li>
+                <li><strong id="st-followers">0</strong><span>粉丝</span></li>
+              </ul>
+            </section>
+
+            <section class="edit-card hidden" id="edit-card">
+              <h2>编辑资料</h2>
+              <form id="edit-form" novalidate>
+                <label class="edit-field">
+                  <span>昵称（2-120 字符）</span>
+                  <input type="text" id="edit-name" maxlength="120" required />
+                </label>
+                <label class="edit-field">
+                  <span>简介（最多 200 字符）</span>
+                  <textarea id="edit-bio" maxlength="200" rows="3"></textarea>
+                </label>
+                <label class="edit-field">
+                  <span>头像链接（可选）</span>
+                  <input type="url" id="edit-avatar" maxlength="500" placeholder="https://…" />
+                </label>
+                <p class="edit-status" id="edit-status" role="status"></p>
+                <div class="edit-actions">
+                  <button type="button" class="btn-ghost" id="edit-cancel">取消</button>
+                  <button type="submit" class="btn-primary" id="edit-save" disabled>保存</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="profile-posts">
+              <h2>我的鸣响</h2>
+              <p class="feed-loading" id="posts-loading">正在加载…</p>
+              <div id="my-posts" class="feed"></div>
+              <div class="empty-state hidden" id="posts-empty">
+                <h3>还没有发布过鸣响</h3>
+                <p>回到首页发布你的第一条吧。</p>
+              </div>
+            </section>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -175,7 +226,9 @@
       </section>
     </div>
 
+    <script src="/nav-liquid.js"></script>
     <script src="/home.js"></script>
+    <script src="/home-profile.js"></script>
     <script src="/motion.js"></script>
   </body>
 </html>
