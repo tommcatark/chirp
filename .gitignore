@@ -1,5 +1,9 @@
 ﻿# Dependencies
 node_modules/
+.npm-cache/
+
+# Build output
+dist/
 
 # 后端已拆分为独立仓库（shirp-q-api）
 backend/
