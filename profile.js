@@ -26,6 +26,12 @@ function avatarPair(seed) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_PAIRS[h % AVATAR_PAIRS.length];
 }
+function avatarVariant(seed) {
+  const s = String(seed ?? "?");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_PAIRS.length;
+}
 function applyAvatar(el, seed, letter) {
   const [a, b] = avatarPair(seed);
   el.style.setProperty("--a", a);
@@ -44,73 +50,18 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString("zh-CN");
 }
 
-let profile = null; // UserMeResponse 或 UserResponse
-let viewId = null;   // URL ?id= 为空或等于自己时为 null，否则为目标用户 id
-let isSelf = true;
+let profile = null; // UserMeResponse
 
 init();
 
 function init() {
   if (!loadToken() || !loadUser()) {
-    location.replace("/");
+    location.replace("/index.html");
     return;
   }
   bindEditForm();
   bindPostDelete();
-  bindProfileActions();
-  bindAvatarClicks();
-
-  const me = loadUser();
-  const param = Number(new URLSearchParams(location.search).get("id"));
-  viewId = (param && param !== me?.id) ? param : null;
-  isSelf = !viewId;
-
-  loadProfile().then((ok) => { if (ok) loadPosts(); });
-}
-
-/* 资料卡上的「关注 / 发消息」按钮（仅他人主页可见） */
-function bindProfileActions() {
-  $("#pf-follow").addEventListener("click", async (e) => {
-    e.preventDefault();
-    if (!viewId) return;
-    const btn = $("#pf-follow");
-    const following = btn.classList.contains("is-following");
-    btn.disabled = true;
-    try {
-      const r = await fetch(`${API_BASE}/api/users/${viewId}/follow`, {
-        method: following ? "DELETE" : "POST",
-        headers: authHeaders()
-      });
-      if (r.status === 401) { location.replace("/"); return; }
-      if (!r.ok) throw new Error();
-      const data = await r.json();
-      profile.followedByMe = !!data.following;
-      profile.followerCount = data.followerCount ?? profile.followerCount ?? 0;
-      renderFollowButton();
-      $("#st-followers").textContent = profile.followerCount;
-    } catch {
-      btn.disabled = false;
-    }
-  });
-
-  $("#pf-message").addEventListener("click", (e) => {
-    e.preventDefault();
-    if (!viewId) return;
-    location.href = `/messages.html?with=${viewId}`;
-  });
-}
-
-/* 头像点击 → 跳转用户主页（仅他人头像可跳，自己头像刷新当前页无意义） */
-function bindAvatarClicks() {
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-uid]");
-    if (!el) return;
-    if (e.target.closest("button, a, input, textarea, select, .post-delete, .edit-btn, .follow-btn, .msg-btn")) return;
-    const uid = Number(el.dataset.uid);
-    if (!uid) return;
-    e.stopPropagation();
-    location.href = `/profile.html?id=${uid}`;
-  }, true);
+  loadProfile().then((ok) => { if (ok) loadMyPosts(); });
 }
 
 /* 删除我的帖子（事件代理，动态渲染无需重复绑定） */
@@ -129,7 +80,7 @@ function bindPostDelete() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${loadToken()}` }
       });
-      if (r.status === 401) { location.replace("/"); return; }
+      if (r.status === 401) { location.replace("/index.html"); return; }
       if (!r.ok && r.status !== 204) {
         btn.disabled = false;
         alert(r.status === 403 ? "只能删除自己的鸣响" : "删除失败，请稍后重试");
@@ -147,16 +98,9 @@ function bindPostDelete() {
 }
 
 async function loadProfile() {
-  const url = isSelf ? `${API_BASE}/api/users/me` : `${API_BASE}/api/users/${viewId}`;
   try {
-    const r = await fetch(url, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return false; }
-    if (r.status === 404) {
-      $("#pf-name").textContent = "用户不存在";
-      $("#pf-bio").textContent = "该用户可能已被注销，或链接有误。";
-      $("#pf-actions").classList.add("hidden");
-      return false;
-    }
+    const r = await fetch(`${API_BASE}/api/users/me`, { headers: authHeaders() });
+    if (r.status === 401) { location.replace("/index.html"); return false; }
     if (!r.ok) throw new Error();
     profile = await r.json();
     renderProfile();
@@ -179,42 +123,14 @@ function renderProfile() {
   $("#st-posts").textContent = profile.postCount ?? 0;
   $("#st-following").textContent = profile.followingCount ?? 0;
   $("#st-followers").textContent = profile.followerCount ?? 0;
-
-  // 自己：显示编辑资料；他人：显示关注 + 发消息
-  const editBtn = $("#edit-btn");
-  const followBtn = $("#pf-follow");
-  const msgBtn = $("#pf-message");
-  if (isSelf) {
-    editBtn.classList.remove("hidden");
-    followBtn.classList.add("hidden");
-    msgBtn.classList.add("hidden");
-    document.title = "个人主页 · 鸣 Chirp";
-    $("#posts-title").textContent = "我的鸣响";
-  } else {
-    editBtn.classList.add("hidden");
-    followBtn.classList.remove("hidden");
-    msgBtn.classList.remove("hidden");
-    msgBtn.href = `/messages.html?with=${profile.id}`;
-    renderFollowButton();
-    document.title = `${profile.name} · 鸣 Chirp`;
-    $("#posts-title").textContent = `${profile.name}的鸣响`;
-  }
-}
-
-/* 根据 followedByMe 切换关注按钮文本与样式 */
-function renderFollowButton() {
-  const btn = $("#pf-follow");
-  const following = !!profile.followedByMe;
-  btn.classList.toggle("is-following", following);
-  btn.textContent = following ? "已关注" : "关注";
 }
 
 /* ============ 我的帖子 ============ */
-async function loadPosts() {
+async function loadMyPosts() {
   $("#posts-loading").classList.remove("hidden");
   try {
     const r = await fetch(`${API_BASE}/api/users/${profile.id}/posts`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     const items = data.items || [];
@@ -222,16 +138,16 @@ async function loadPosts() {
     $("#posts-empty").classList.toggle("hidden", items.length > 0);
     $("#my-posts").innerHTML = items.map((p) => `
       <article class="chirp" data-id="${p.id}">
-        <div class="avatar avatar-lg" data-uid="${p.userId}" style="--a:${avatarPair(p.userId)[0]};--b:${avatarPair(p.userId)[1]}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
+        <div class="avatar avatar-lg" data-av="${avatarVariant(p.userId)}">${escapeHTML((p.authorName || "?").charAt(0))}</div>
         <div class="chirp-main">
           <p class="chirp-head">
             <strong>${escapeHTML(p.authorName)}</strong>
             <span class="handle">@${escapeHTML(p.authorHandle)}</span>
             <span class="dot">·</span>
             <time>${timeAgo(Date.parse(p.createdAt) || Date.now())}</time>
-            ${isSelf ? `<button type="button" class="post-delete" title="删除这条鸣响" aria-label="删除这条鸣响">
+            <button type="button" class="post-delete" title="删除这条鸣响" aria-label="删除这条鸣响">
               <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6M10 11v6M14 11v6"/></svg>
-            </button>` : ""}
+            </button>
           </p>
           <p class="chirp-content">${escapeHTML(p.content)}</p>
           <div class="chirp-foot">
@@ -281,7 +197,7 @@ function bindEditForm() {
         body: JSON.stringify({ name, bio, avatarUrl })
       });
       const data = await r.json().catch(() => ({}));
-      if (r.status === 401) { location.replace("/"); return; }
+      if (r.status === 401) { location.replace("/index.html"); return; }
       if (!r.ok) throw new Error(data.message || "保存失败，请稍后重试");
       profile = data;
       // 同步登录态缓存，首页用户卡片立即生效

@@ -27,6 +27,12 @@ function avatarPair(seed) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_PAIRS[h % AVATAR_PAIRS.length];
 }
+function avatarVariant(seed) {
+  const s = String(seed ?? "?");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_PAIRS.length;
+}
 function timeAgo(ts) {
   const diff = Date.now() - ts;
   const m = Math.floor(diff / 60000);
@@ -48,14 +54,13 @@ init();
 
 function init() {
   if (!loadToken() || !me) {
-    location.replace("/");
+    location.replace("/index.html");
     return;
   }
   $("#conv-list").addEventListener("click", onConvClick);
   $("#chat-back").addEventListener("click", backToList);
   $("#chat-form").addEventListener("submit", onSend);
   $("#chat-more-btn").addEventListener("click", () => loadMessages(false));
-  bindAvatarClicks();
   const input = $("#chat-input");
   input.addEventListener("input", () => {
     $("#chat-send").disabled = !input.value.trim();
@@ -76,19 +81,6 @@ function init() {
   }
 }
 
-/* 头像点击 → 跳转用户主页 */
-function bindAvatarClicks() {
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-uid]");
-    if (!el) return;
-    if (e.target.closest("button, a, input, textarea, select")) return;
-    const uid = Number(el.dataset.uid);
-    if (!uid) return;
-    e.stopPropagation();
-    location.href = `/profile.html?id=${uid}`;
-  }, true);
-}
-
 /* ============ 会话列表 ============ */
 async function loadConversations() {
   $("#conv-view").classList.remove("hidden");
@@ -97,7 +89,7 @@ async function loadConversations() {
   $("#conv-empty").classList.add("hidden");
   try {
     const r = await fetch(`${API_BASE}/api/messages/conversations`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     const items = data.items || [];
@@ -117,11 +109,11 @@ function convHTML(c) {
   const u = c.user || {};
   const last = c.lastMessage || {};
   const mine = last.senderId === me.id;
-  const [a, b] = avatarPair(u.id);
+  const variant = avatarVariant(u.id);
   return `
   <li class="conv-item ${c.unreadCount > 0 ? "is-unread" : ""}" data-id="${u.id}"
       data-name="${escapeHTML(u.name)}" data-handle="${escapeHTML(u.handle)}">
-    <div class="avatar" data-uid="${u.id}" style="--a:${a};--b:${b}">${escapeHTML((u.name || "?").charAt(0))}</div>
+    <div class="avatar" data-av="${variant}">${escapeHTML((u.name || "?").charAt(0))}</div>
     <div class="conv-body">
       <p class="conv-line">
         <strong>${escapeHTML(u.name)}</strong>
@@ -148,7 +140,7 @@ function onConvClick(event) {
 async function openChatById(userId) {
   try {
     const r = await fetch(`${API_BASE}/api/users/${userId}`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const u = await r.json();
     openChat({ id: u.id, name: u.name, handle: u.handle });
@@ -168,7 +160,6 @@ function openChat(user) {
   avatar.style.setProperty("--a", a);
   avatar.style.setProperty("--b", b);
   avatar.textContent = (user.name || "?").charAt(0);
-  avatar.dataset.uid = user.id;
   $("#chat-name").textContent = user.name;
   $("#chat-handle").textContent = `@${user.handle}`;
   $("#msg-list").innerHTML = "";
@@ -189,7 +180,7 @@ async function loadMessages(reset) {
   if (reset) $("#chat-loading").classList.remove("hidden");
   try {
     const r = await fetch(`${API_BASE}/api/messages?with=${currentPeer.id}&offset=${reset ? 0 : msgOffset}&limit=${PAGE_SIZE}`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     // 接口返回倒序（最新在前），渲染时反转为正序
@@ -249,7 +240,7 @@ async function onSend(event) {
       headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ recipientId: currentPeer.id, content })
     });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const m = await r.json();
     $("#msg-list").insertAdjacentHTML("beforeend", bubbleHTML(m));

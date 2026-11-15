@@ -35,7 +35,7 @@ const securityHeaders = {
 createServer(async (req, res) => {
   try {
     const requestPath = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
-    const safePath = normalize(requestPath === "/" ? "/index.html" : requestPath);
+    const safePath = normalize(requestPath === "/" ? "/welcome.html" : requestPath);
     const filePath = join(root, safePath);
     if (!filePath.startsWith(root)) throw new Error("Forbidden");
     const body = await readFile(filePath);

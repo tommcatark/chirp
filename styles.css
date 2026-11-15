@@ -161,7 +161,6 @@ h1 em {
   color: #10322a;
   background: linear-gradient(135deg, var(--a), var(--b));
 }
-.avatar[data-uid] { cursor: pointer; }
 .chirp-body { min-width: 0; }
 .chirp-meta { margin: 2px 0 4px; font-size: 12.5px; }
 .chirp-meta strong { font-weight: 600; color: #f1faf5; }
@@ -841,7 +840,6 @@ a:hover { text-decoration: underline; }
 .profile-bio { margin: 0 0 6px; font-size: 14.5px; line-height: 1.6; word-break: break-word; }
 .profile-joined { margin: 0; color: var(--muted); font-size: 13px; }
 
-.pf-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .edit-btn {
   border: 1px solid var(--line);
   background: none;
@@ -852,22 +850,8 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
   cursor: pointer;
   color: var(--ink);
-  text-decoration: none;
 }
 .edit-btn:hover { border-color: var(--green); color: var(--green); }
-.msg-btn {
-  border: 1px solid var(--green);
-  background: none;
-  border-radius: 999px;
-  padding: 7px 16px;
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--green);
-  text-decoration: none;
-}
-.msg-btn:hover { background: var(--green); color: #fff; }
 
 .profile-stats { grid-column: 1 / -1; display: flex; gap: 28px; list-style: none; margin: 8px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); }
 .profile-stats li { display: flex; align-items: baseline; gap: 6px; }
@@ -904,7 +888,7 @@ a:hover { text-decoration: underline; }
 
 @media (max-width: 600px) {
   .profile-card { grid-template-columns: auto 1fr; }
-  .pf-actions { grid-column: 1 / -1; justify-self: start; }
+  .edit-btn { grid-column: 1 / -1; justify-self: start; }
 }
 
 /* ---------- 话题页 ---------- */
@@ -1012,34 +996,3 @@ a:hover { text-decoration: underline; }
 .chat-composer { display: flex; gap: 10px; align-items: flex-end; background: #fff; border: 1px solid var(--line); border-radius: 0 0 16px 16px; padding: 12px 14px; }
 .chat-composer textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; font: inherit; font-size: 14px; line-height: 1.5; max-height: 120px; outline: none; }
 .chat-composer textarea:focus { border-color: var(--green); }
-
-/* ---------- 收藏页 ---------- */
-.bm-head { display: flex; align-items: center; gap: 12px; padding: 4px 4px 0; }
-.bm-head h1 { font-size: 22px; margin: 0; }
-.bm-count { font-size: 13px; color: var(--muted); }
-
-.bm-list { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-.bm-list:empty { display: none; }
-.bm-list .chirp:last-child { border-bottom: 0; }
-.bm-remove {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 0;
-  background: none;
-  padding: 4px 9px;
-  border-radius: 999px;
-  color: var(--green);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .18s;
-}
-.bm-remove:hover:not(:disabled) { background: rgba(14, 159, 110, .09); }
-.bm-remove:disabled { color: var(--muted); cursor: default; }
-.bm-remove svg path { fill: currentColor; stroke: currentColor; stroke-width: 1.6; }
-
-.action-bookmark:hover, .action-bookmark.on { color: #b07d16; background: rgba(176, 125, 22, .09); }
-.action-bookmark.on svg path { fill: currentColor; stroke: currentColor; }
-

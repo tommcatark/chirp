@@ -39,6 +39,12 @@ function avatarPair(seed) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return AVATAR_PAIRS[h % AVATAR_PAIRS.length];
 }
+function avatarVariant(seed) {
+  const s = String(seed ?? "?");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_PAIRS.length;
+}
 function timeAgo(ts) {
   const diff = Date.now() - ts;
   const m = Math.floor(diff / 60000);
@@ -59,27 +65,13 @@ init();
 
 function init() {
   if (!loadToken()) {
-    location.replace("/");
+    location.replace("/index.html");
     return;
   }
   $("#mark-all-btn").addEventListener("click", markAllRead);
   $("#load-more-btn").addEventListener("click", () => loadNotifications(false));
   $("#notif-list").addEventListener("click", onItemClick);
-  bindAvatarClicks();
   loadNotifications(true);
-}
-
-/* 头像点击 → 跳转用户主页 */
-function bindAvatarClicks() {
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-uid]");
-    if (!el) return;
-    if (e.target.closest("button, a, input, textarea, select")) return;
-    const uid = Number(el.dataset.uid);
-    if (!uid) return;
-    e.stopPropagation();
-    location.href = `/profile.html?id=${uid}`;
-  }, true);
 }
 
 /* ============ 加载列表 ============ */
@@ -93,7 +85,7 @@ async function loadNotifications(reset) {
   moreBtn.classList.add("hidden");
   try {
     const r = await fetch(`${API_BASE}/api/notifications?offset=${reset ? 0 : offset}&limit=${PAGE_SIZE}`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     const items = data.items || [];
@@ -117,15 +109,13 @@ async function loadNotifications(reset) {
 
 function notifHTML(n) {
   const meta = TYPE_META[n.type] || { text: "与你互动了", icon: "" };
-  const actorId = n.actor?.id;
-  const [a, b] = avatarPair(actorId);
+  const variant = avatarVariant(n.actor?.id);
   const actorName = n.actor?.name || "未知用户";
   const quote = n.commentExcerpt || n.postExcerpt;
-  const uidAttr = actorId ? ` data-uid="${actorId}"` : "";
   return `
   <li class="notif-item ${n.isRead ? "" : "is-unread"}" data-id="${n.id}" data-read="${n.isRead}">
     <span class="notif-icon notif-icon-${escapeHTML(n.type)}">${meta.icon}</span>
-    <div class="avatar"${uidAttr} style="--a:${a};--b:${b}">${escapeHTML(actorName.charAt(0))}</div>
+    <div class="avatar" data-av="${variant}">${escapeHTML(actorName.charAt(0))}</div>
     <div class="notif-body">
       <p class="notif-line">
         <strong>${escapeHTML(actorName)}</strong>
@@ -156,7 +146,7 @@ async function markAllRead() {
       headers: authHeaders({ "Content-Type": "application/json" }),
       body: "{}"
     });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     unreadCount = data.unreadCount ?? 0;
@@ -187,7 +177,7 @@ async function onItemClick(event) {
       headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ ids: [id] })
     });
-    if (r.status === 401) { location.replace("/"); return; }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
     unreadCount = data.unreadCount ?? unreadCount;

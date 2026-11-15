@@ -17,11 +17,11 @@ function authHeaders(extra = {}) {
 function escapeHTML(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
-function avatarPair(seed) {
+function hashSeed(seed) {
   const s = String(seed ?? "?");
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return AVATAR_PAIRS[h % AVATAR_PAIRS.length];
+  return h;
 }
 function timeAgo(ts) {
   const diff = Date.now() - ts;
@@ -34,20 +34,16 @@ function timeAgo(ts) {
   if (d < 30) return `${d} 天前`;
   return new Date(ts).toLocaleDateString("zh-CN");
 }
-function formatCount(n) {
-  const v = Number(n) || 0;
-  return v >= 10000 ? `${(v / 10000).toFixed(1)}w` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v);
-}
 
-let items = [];
 let offset = 0;
+let hasMore = false;
 let total = 0;
 
 init();
 
 function init() {
   if (!loadToken()) {
-    location.replace("/");
+    location.replace("/index.html");
     return;
   }
   $("#bm-more").addEventListener("click", () => loadBookmarks(false));
@@ -57,100 +53,96 @@ function init() {
 
 /* ============ 加载列表 ============ */
 async function loadBookmarks(reset) {
-  const loading = $("#bm-loading");
   if (reset) {
     offset = 0;
-    loading.textContent = "正在加载…";
-    loading.classList.remove("hidden");
+    $("#bm-loading").classList.remove("hidden");
     $("#bm-empty").classList.add("hidden");
   }
-  $("#bm-more").classList.add("hidden");
+  const moreBtn = $("#bm-more");
+  moreBtn.classList.add("hidden");
   try {
     const r = await fetch(`${API_BASE}/api/bookmarks?offset=${reset ? 0 : offset}&limit=${PAGE_SIZE}`, { headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
-    if (r.status === 404) {
-      // 后端尚未提供收藏接口时给出明确提示，而不是误报网络故障
-      loading.textContent = "收藏功能暂未开放：后端尚未提供 /api/bookmarks 接口。";
-      loading.classList.remove("hidden");
-      return;
-    }
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
     const data = await r.json();
-    const list = data.items || [];
-    total = typeof data.total === "number" ? data.total : list.length;
-    offset = (reset ? 0 : offset) + list.length;
-    items = reset ? list : items.concat(list);
-    loading.classList.add("hidden");
-    render();
-    $("#bm-empty").classList.toggle("hidden", items.length > 0);
-    $("#bm-more").classList.toggle("hidden", !data.hasMore);
+    const items = data.items || [];
+    total = data.total ?? 0;
+    hasMore = !!data.hasMore;
+    offset = (reset ? 0 : offset) + items.length;
+
+    if (reset) {
+      $("#bm-loading").classList.add("hidden");
+      $("#bm-list").innerHTML = items.map(itemHTML).join("");
+      $("#bm-empty").classList.toggle("hidden", items.length > 0);
+    } else {
+      $("#bm-list").insertAdjacentHTML("beforeend", items.map(itemHTML).join(""));
+    }
+    syncCountUI();
+    moreBtn.classList.toggle("hidden", !hasMore);
   } catch {
-    if (reset) loading.textContent = "收藏加载失败，请确认后端服务已启动后刷新重试。";
+    if (reset) {
+      $("#bm-loading").textContent = "收藏加载失败，请确认后端服务已启动后刷新重试。";
+    }
   }
 }
 
-function render() {
-  $("#bm-list").innerHTML = items.map(cardHTML).join("");
-  syncCount();
-}
-
-function cardHTML(p) {
-  const [a, b] = avatarPair(p.userId);
+function itemHTML(p) {
   const name = p.authorName || "未知用户";
+  const handle = p.authorHandle || "unknown";
+  const initial = escapeHTML(String(name).charAt(0));
   return `
   <article class="chirp bm-item" data-id="${p.id}">
-    <div class="avatar avatar-lg" style="--a:${a};--b:${b}">${escapeHTML(name.charAt(0))}</div>
+    <div class="avatar" data-av="${hashSeed(p.userId) % AVATAR_PAIRS.length}">${initial}</div>
     <div class="chirp-main">
       <p class="chirp-head">
         <strong>${escapeHTML(name)}</strong>
-        <span class="handle">@${escapeHTML(p.authorHandle || "unknown")}</span>
+        <span class="handle">@${escapeHTML(handle)}</span>
         <span class="dot">·</span>
         <time>${timeAgo(Date.parse(p.createdAt) || Date.now())}</time>
-        <button type="button" class="bm-remove" title="取消收藏">
-          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4Z" /></svg>
-          <span>取消收藏</span>
-        </button>
       </p>
       <p class="chirp-content">${escapeHTML(p.content)}</p>
       <div class="chirp-foot">
-        <span class="action-static">评论 ${p.comments ?? 0}</span>
-        <span class="action-static">点赞 ${formatCount(p.likes)}</span>
+        <button type="button" class="action action-bookmark on" title="取消收藏">
+          <svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 3h12v18l-6-4-6 4Z" /></svg>
+          <span>已收藏</span>
+        </button>
       </div>
     </div>
   </article>`;
 }
 
-function syncCount() {
-  const el = $("#bm-count");
-  el.textContent = `${total} 条收藏`;
-  el.classList.toggle("hidden", total === 0);
+function syncCountUI() {
+  const badge = $("#bm-count");
+  badge.textContent = `${total} 条`;
+  badge.classList.toggle("hidden", total === 0);
 }
 
 /* ============ 取消收藏 ============ */
 async function onListClick(event) {
-  const btn = event.target.closest(".bm-remove");
+  const btn = event.target.closest(".action-bookmark");
   if (!btn || btn.disabled) return;
-  const id = Number(btn.closest(".bm-item")?.dataset.id);
-  if (!id) return;
+  const card = btn.closest(".bm-item");
+  const id = Number(card?.dataset.id);
+  if (!card || !id) return;
 
   btn.disabled = true;
+  card.classList.add("is-removing");
   try {
-    const r = await fetch(`${API_BASE}/api/posts/${id}/bookmark`, { method: "DELETE", headers: authHeaders() });
-    if (r.status === 401) { location.replace("/"); return; }
+    const r = await fetch(`${API_BASE}/api/posts/${id}/bookmark`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+    if (r.status === 401) { location.replace("/index.html"); return; }
     if (!r.ok) throw new Error();
-    removeItem(id);
+    card.remove();
+    total = Math.max(0, total - 1);
+    offset = Math.max(0, offset - 1);
+    syncCountUI();
+    if (!$("#bm-list").children.length && !hasMore) {
+      $("#bm-empty").classList.remove("hidden");
+    }
   } catch {
+    card.classList.remove("is-removing");
     btn.disabled = false;
-    btn.querySelector("span").textContent = "取消失败，重试";
   }
-}
-
-function removeItem(id) {
-  items = items.filter((p) => p.id !== id);
-  total = Math.max(0, total - 1);
-  const node = $(`.bm-item[data-id="${id}"]`);
-  if (node) node.remove();
-  $("#bm-empty").classList.toggle("hidden", items.length > 0);
-  $("#bm-more").classList.toggle("hidden", items.length >= total);
-  syncCount();
 }

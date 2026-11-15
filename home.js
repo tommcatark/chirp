@@ -8,7 +8,7 @@ function clearAuthAndRedirect() {
   sessionStorage.removeItem("chirpUser");
   localStorage.removeItem("chirpToken");
   sessionStorage.removeItem("chirpToken");
-  window.location.replace("/");
+  window.location.replace("/index.html");
 }
 
 function loadCurrentUser() {
@@ -91,22 +91,31 @@ function colorsFor(seed) {
   return AVATAR_PAIRS[hashSeed(seed) % AVATAR_PAIRS.length];
 }
 
+function formatDate(ts) {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function timeAgo(ts) {
-  const diff = Date.now() - ts;
+  if (!Number.isFinite(ts)) return "";
+  const diff = Math.max(0, Date.now() - ts);
   if (diff < MIN) return "刚刚";
-  if (diff < HOUR) return `${Math.floor(diff / MIN)} 分钟`;
-  if (diff < 24 * HOUR) return `${Math.floor(diff / HOUR)} 小时`;
-  return `${Math.floor(diff / (24 * HOUR))} 天`;
+  if (diff < HOUR) return `${Math.floor(diff / MIN)} 分钟前`;
+  if (diff < 24 * HOUR) return `${Math.floor(diff / HOUR)} 小时前`;
+  if (diff < 7 * 24 * HOUR) return `${Math.floor(diff / (24 * HOUR))} 天前`;
+  return formatDate(ts);
 }
 
 function formatCount(n) {
   return n >= 10000 ? `${(n / 10000).toFixed(1)}w` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-function avatarHTML(seed, name, extraClass = "", uid = null) {
-  const [a, b] = colorsFor(seed);
-  const uidAttr = uid ? ` data-uid="${uid}"` : "";
-  return `<div class="avatar ${extraClass}"${uidAttr} style="--a:${a};--b:${b}">${escapeHTML(initialOf(name))}</div>`;
+function avatarHTML(seed, name, extraClass = "") {
+  return `<div class="avatar ${extraClass}" data-av="${hashSeed(seed) % AVATAR_PAIRS.length}">${escapeHTML(initialOf(name))}</div>`;
 }
 
 /* 将后端 PostResponse 归一化为前端渲染结构 */
@@ -121,8 +130,8 @@ function normalizePost(p) {
     reposts: p.reposts || 0,
     comments: p.comments || 0,
     liked: !!p.liked,
-    reposted: false,
     bookmarked: !!p.bookmarked,
+    reposted: false,
     mine: !!p.mine
   };
 }
@@ -141,7 +150,6 @@ function init() {
   $("#me-avatar").style.setProperty("--b", b);
   $("#composer-avatar").style.setProperty("--a", a);
   $("#composer-avatar").style.setProperty("--b", b);
-  if (me.id) $("#me-avatar").dataset.uid = me.id;
 
   renderTrends();
   bindEvents();
@@ -244,7 +252,7 @@ async function toggleLike(post, button) {
   }
 }
 
-/* ============ 接口：收藏 ============ */
+/* ============ 接口：收藏（POST/DELETE /api/posts/{id}/bookmark） ============ */
 async function toggleBookmark(post, button) {
   const willBookmark = !post.bookmarked;
   // 乐观更新 UI
@@ -257,12 +265,10 @@ async function toggleBookmark(post, button) {
     });
     if (response.status === 401) { handleAuthExpired(); return; }
     if (!response.ok) throw new Error();
-    // 以服务端返回的状态为准
-    const data = await response.json().catch(() => ({}));
-    if (typeof data.bookmarked === "boolean") {
-      post.bookmarked = data.bookmarked;
-      button.classList.toggle("on", data.bookmarked);
-    }
+    // 以服务端状态为准
+    const data = await response.json();
+    post.bookmarked = !!data.bookmarked;
+    button.classList.toggle("on", post.bookmarked);
   } catch {
     // 失败回滚
     post.bookmarked = !willBookmark;
@@ -433,7 +439,7 @@ async function removeComment(commentId) {
 function commentHTML(c) {
   return `
     <div class="comment" data-cid="${c.id}">
-      ${avatarHTML(c.userId, c.author.name, "avatar-sm", c.userId)}
+      ${avatarHTML(c.userId, c.author.name, "avatar-sm")}
       <div class="comment-main">
         <p class="comment-head">
           <strong>${escapeHTML(c.author.name)}</strong>
@@ -572,7 +578,7 @@ function visiblePosts() {
 function postHTML(post) {
   return `
     <article class="chirp" data-id="${post.id}">
-      ${avatarHTML(post.userId, post.author.name, "", post.userId)}
+      ${avatarHTML(post.userId, post.author.name)}
       <div class="chirp-main">
         <p class="chirp-head">
           <strong>${escapeHTML(post.author.name)}</strong>
@@ -625,13 +631,13 @@ function renderFeed(highlightId = null) {
   const emptyBox = $("#empty-following");
   if (activeTab === "following" && list.length === 0 && !keyword) {
     emptyBox.querySelector("h2").textContent = "关注流还是静的";
-    emptyBox.querySelector("p").textContent = "去右侧「你可能感兴趣的人」关注一些声音，这里就会热闹起来。";
+    emptyBox.querySelector("p").textContent = "去探索页关注一些声音，这里就会热闹起来。";
     emptyBox.classList.remove("hidden");
     feed.classList.add("hidden");
   } else if (noData) {
     // 数据库中还没有任何帖子：发一条即可打破空白
     emptyBox.querySelector("h2").textContent = "还没有任何鸣响";
-    emptyBox.querySelector("p").textContent = "在上方发布框写下你的第一声，让时间流动起来。";
+    emptyBox.querySelector("p").textContent = "点击「+」发布你的第一声，让时间流动起来。";
     emptyBox.classList.remove("hidden");
     feed.classList.add("hidden");
   } else {
@@ -667,7 +673,7 @@ async function loadTrends() {
 function renderSuggestions() {
   $("#suggest-list").innerHTML = suggestions.map((s) => `
     <li data-handle="${escapeHTML(s.handle)}">
-      ${avatarHTML(s.handle, s.name, "", s.id)}
+      ${avatarHTML(s.handle, s.name)}
       <div class="suggest-meta">
         <strong>${escapeHTML(s.name)}</strong>
         <span>@${escapeHTML(s.handle)}</span>
@@ -680,17 +686,6 @@ function renderSuggestions() {
 
 /* ============ 事件绑定 ============ */
 function bindEvents() {
-  // 头像点击 → 跳转用户主页（事件代理，capture 阶段避免被按钮吞掉）
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-uid]");
-    if (!el) return;
-    if (e.target.closest("button, a, input, textarea, select, .action, .post-delete, .comment-delete, .follow-btn, .bm-remove")) return;
-    const uid = Number(el.dataset.uid);
-    if (!uid) return;
-    e.stopPropagation();
-    location.href = `/profile.html?id=${uid}`;
-  }, true);
-
   const input = $("#composer-input");
   const counter = $("#char-count");
   const postBtn = $("#post-btn");
@@ -712,7 +707,21 @@ function bindEvents() {
   input.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !postBtn.disabled) postBtn.click();
   });
-  $("#compose-cta").addEventListener("click", () => input.focus());
+  const composerModal = $("#composer-modal");
+  const closeComposer = () => composerModal.classList.add("hidden");
+  const openComposer = () => {
+    composerModal.classList.remove("hidden");
+    input.focus();
+  };
+
+  $("#compose-cta").addEventListener("click", openComposer);
+  $("#composer-close").addEventListener("click", closeComposer);
+  composerModal.addEventListener("click", (event) => {
+    if (event.target === composerModal) closeComposer();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !composerModal.classList.contains("hidden")) closeComposer();
+  });
   $("#retry-btn").addEventListener("click", loadFeed);
 
   postBtn.addEventListener("click", async () => {
@@ -728,6 +737,7 @@ function bindEvents() {
       if (!created) return; // 401 已触发跳转
       posts.unshift(created);
       input.value = "";
+      closeComposer();
       activeTab = "all";
       document.querySelectorAll(".feed-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === "all"));
       renderFeed(created.id);
@@ -781,13 +791,13 @@ function bindEvents() {
       toggleCommentPanel(chirp, post);
     } else if (button.classList.contains("action-like")) {
       toggleLike(post, button);
+    } else if (button.classList.contains("action-bookmark")) {
+      toggleBookmark(post, button);
     } else if (button.classList.contains("action-repost")) {
       post.reposted = !post.reposted;
       post.reposts += post.reposted ? 1 : -1;
       button.classList.toggle("on", post.reposted);
       count.textContent = formatCount(post.reposts);
-    } else if (button.classList.contains("action-bookmark")) {
-      toggleBookmark(post, button);
     }
   });
 
@@ -825,6 +835,19 @@ function bindEvents() {
   });
 
   $("#logout-btn").addEventListener("click", () => {
-    clearAuthAndRedirect();
+    const token = loadToken();
+    if (!token) {
+      clearAuthAndRedirect();
+      return;
+    }
+    // 先通知后端删除 Redis 中的 token（keepalive 保证页面跳转后请求仍能送达），
+    // 无论请求成败都清理本地登录态并跳转，避免后端异常时退不出去。
+    fetch(`${API_BASE}/api/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      keepalive: true
+    })
+      .catch(() => {})
+      .finally(clearAuthAndRedirect);
   });
 }

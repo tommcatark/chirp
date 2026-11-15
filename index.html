@@ -3,18 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#07211a" />
+    <meta name="theme-color" content="#0B0A1F" />
     <title>鸣 Chirp · 登录</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230e9f6e'/%3E%3Crect x='5' y='10' width='3.4' height='8' rx='1.7' fill='white'/%3E%3Crect x='10.3' y='5.5' width='3.4' height='13' rx='1.7' fill='white'/%3E%3Crect x='15.6' y='9' width='3.4' height='9.5' rx='1.7' fill='white'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237C5CFF'/%3E%3Cstop offset='1' stop-color='%23FF7AC6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='24' height='24' rx='6' fill='url(%23g)'/%3E%3Crect x='5' y='10' width='3.4' height='8' rx='1.7' fill='%230B0A1F'/%3E%3Crect x='10.3' y='5.5' width='3.4' height='13' rx='1.7' fill='%230B0A1F'/%3E%3Crect x='15.6' y='9' width='3.4' height='9.5' rx='1.7' fill='%230B0A1F'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/dream-theme.css" />
+    <link rel="stylesheet" href="/layout-v2.css" />
+    <link rel="stylesheet" href="/starfield.css" />
   </head>
-  <body>
-    <main class="page-shell">
-      <section class="brand-panel">
-        <div class="aurora aurora-one"></div>
-        <div class="aurora aurora-two"></div>
+  <body class="auth-body star-body">
+    <div class="starfield" id="starfield" aria-hidden="true"></div>
+    <main class="auth-stage">
+      <div class="auth-orbit" aria-hidden="true">
+        <span class="orbit-glow"></span>
+        <span class="orbit-ring orbit-ring-1"></span>
+        <span class="orbit-ring orbit-ring-2"></span>
+        <span class="orbit-ring orbit-ring-3"></span>
+      </div>
 
-        <div class="brand-mark" aria-label="鸣 Chirp">
+      <aside class="auth-satellite sat-brand">
+        <a class="brand-mark" href="/welcome.html" aria-label="返回鸣 Chirp 首屏">
           <span class="brand-symbol" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="22" height="22">
               <rect x="4" y="9" width="4" height="10" rx="2" class="bar bar-1" />
@@ -23,48 +31,40 @@
             </svg>
           </span>
           <span>鸣 <em>Chirp</em></span>
-        </div>
+        </a>
+        <h1 class="sat-title">让每一个想法<br /><em>鸣响</em>世界。</h1>
+        <p class="sat-copy">分享此刻、加入讨论，你的声音会在这里激起回响。</p>
+      </aside>
 
-        <div class="brand-copy">
-          <p class="eyebrow">SPEAK · ECHO · RESONATE</p>
-          <h1>让每一个想法<br /><em>鸣响</em>世界。</h1>
-          <p class="intro">分享此刻、加入讨论，你的声音会在这里激起回响。</p>
+      <aside class="auth-satellite sat-quote" aria-hidden="true">
+        <span class="sat-mark">“</span>
+        <p>好想法不该只停留在脑海里，说出来就是第一步。</p>
+        <span class="sat-meta">夜航船 · @nightboat</span>
+      </aside>
 
-          <div class="feed-preview" aria-hidden="true">
-            <article class="chirp-card card-one">
-              <div class="avatar" style="--a:#fcd34d;--b:#f472b6">林</div>
-              <div class="chirp-body">
-                <p class="chirp-meta"><strong>林默</strong><span>@linmo · 2 分钟</span></p>
-                <p class="chirp-text">刚在鸣上发了第一条，有人听见吗？🌙</p>
-                <p class="chirp-actions"><span>♡ 128</span><span>♺ 46</span><span>◎ 12</span></p>
-              </div>
-            </article>
-            <article class="chirp-card card-two">
-              <div class="avatar" style="--a:#6ee7b7;--b:#38bdf8">舟</div>
-              <div class="chirp-body">
-                <p class="chirp-meta"><strong>夜航船</strong><span>@nightboat · 17 分钟</span></p>
-                <p class="chirp-text">好想法不该只停留在脑海里，说出来就是第一步。</p>
-                <p class="chirp-actions"><span>♡ 2.3k</span><span>♺ 812</span><span>◎ 95</span></p>
-              </div>
-            </article>
-            <article class="chirp-card card-three">
-              <div class="avatar" style="--a:#c4b5fd;--b:#f0abfc">M</div>
-              <div class="chirp-body">
-                <p class="chirp-meta"><strong>Momo</strong><span>@momo · 1 小时</span></p>
-                <p class="chirp-text">今天的日落值得一条头条 ✦</p>
-                <p class="chirp-actions"><span>♡ 894</span><span>♺ 203</span><span>◎ 41</span></p>
-              </div>
-            </article>
+      <aside class="auth-satellite sat-card sat-card-a" aria-hidden="true">
+        <article class="chirp-card">
+          <div class="avatar" data-av="0">林</div>
+          <div class="chirp-body">
+            <p class="chirp-meta"><strong>林默</strong><span>@linmo · 2 分钟</span></p>
+            <p class="chirp-text">刚在鸣上发了第一条，有人听见吗？🌙</p>
+            <p class="chirp-actions"><span>♡ 128</span><span>♺ 46</span><span>◎ 12</span></p>
           </div>
-        </div>
+        </article>
+      </aside>
 
-        <div class="panel-footer">
-          <span>© 2026 Chirp</span>
-          <span>每一声，都有回响</span>
-        </div>
-      </section>
+      <aside class="auth-satellite sat-card sat-card-b" aria-hidden="true">
+        <article class="chirp-card">
+          <div class="avatar" data-av="2">M</div>
+          <div class="chirp-body">
+            <p class="chirp-meta"><strong>Momo</strong><span>@momo · 1 小时</span></p>
+            <p class="chirp-text">今天的日落值得一条头条 ✦</p>
+            <p class="chirp-actions"><span>♡ 894</span><span>♺ 203</span><span>◎ 41</span></p>
+          </div>
+        </article>
+      </aside>
 
-      <section class="form-panel">
+      <section class="auth-center">
         <div class="form-wrap">
           <div class="mobile-brand">
             <span class="brand-symbol" aria-hidden="true">
@@ -141,7 +141,17 @@
           <p class="terms">继续即表示你同意我们的 <a href="#">服务条款</a> 与 <a href="#">隐私政策</a></p>
         </div>
       </section>
+
+      <footer class="auth-foot">
+        <span>© 2026 Chirp</span>
+        <span>每一声，都有回响</span>
+        <button class="star-motion-toggle" id="star-motion-toggle" type="button" aria-pressed="true" title="关闭星空粒子动效">
+          <span class="star-motion-dot" aria-hidden="true">✦</span>
+          <span class="star-motion-label">动效 开</span>
+        </button>
+      </footer>
     </main>
+    <script src="/starfield.js"></script>
     <script src="/crypto.js"></script>
     <script src="/app.js"></script>
   </body>
