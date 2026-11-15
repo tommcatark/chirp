@@ -8,7 +8,13 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://localhost:8080",
-        changeOrigin: true
+        changeOrigin: true,
+        configure: (proxy) => {
+          /* 开发代理去掉 Origin，避免后端 CORS 只放行固定端口 */
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.removeHeader("origin");
+          });
+        }
       }
     }
   },
